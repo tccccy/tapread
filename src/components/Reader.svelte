@@ -14,11 +14,15 @@
   import type { Definition } from '../lib/ai/definition'
   import LookupCard, { type CardState } from './LookupCard.svelte'
 
-  let { bookId, onClose, onOpenSettings }: {
+  let { bookId, jumpTo, onClose, onOpenSettings }: {
     bookId: number
+    /** 從單字本「回到書中」開啟：跳到該句、不改變閱讀進度 */
+    jumpTo?: string
     onClose: () => void
     onOpenSettings: () => void
   } = $props()
+
+  const peek = $derived(jumpTo !== undefined)
 
   let container: HTMLDivElement
   let view: FoliateView | null = null
@@ -30,7 +34,7 @@
   let language = ''
   let card = $state<CardState | null>(null)
   // 目前卡片對應的查詢內容，收藏時用
-  let current: { word: string; sentence: string; definition: Definition; savedId: string | null } | null = null
+  let current: { word: string; sentence: string; definition: Definition; savedId: string | null; cfi?: string } | null = null
   let saving = false
   let refreshSeq = 0
   const vocab = createVocabStore(db)
@@ -99,7 +103,7 @@
         return undefined
       })
       if (seq !== lookupSeq) return
-      current = { word: tapped.word, sentence: tapped.sentence, definition, savedId: found?.id ?? null }
+      current = { word: tapped.word, sentence: tapped.sentence, definition, savedId: found?.id ?? null, cfi: cfiOf(doc, tapped.range) }
       card = { status: 'done', word: tapped.word, definition, saved: !!found }
     } catch (err) {
       if (seq !== lookupSeq) return
@@ -135,8 +139,8 @@
       if (target.savedId) {
         await vocab.unsave(target.savedId, target.word, target.sentence)
       } else {
-        const { word, sentence, definition } = target
-        savedId = (await vocab.save({ language, word, sentence, definition, bookId, bookTitle: title })).id
+        const { word, sentence, definition, cfi } = target
+        savedId = (await vocab.save({ language, word, sentence, definition, bookId, bookTitle: title, cfi })).id
       }
       if (current === target) current = { ...target, savedId }
       await refreshVocabHighlights()
@@ -146,6 +150,31 @@
       if (current === target && card?.status === 'done') card = { ...card, saved: wasSaved }
     } finally {
       saving = false
+    }
+  }
+
+  // 單字在書中的位置；算不出來（例如特殊排版）時就不存，只是無法「回到書中」
+  function cfiOf(doc: Document, range: Range): string | undefined {
+    const index = view?.renderer.getContents?.().find((c) => c.doc === doc)?.index
+    if (!view || index === undefined) return undefined
+    try {
+      return view.getCFI(index, range)
+    } catch (err) {
+      console.warn('無法計算書中位置', err)
+      return undefined
+    }
+  }
+
+  function highlightCfi(cfi: string) {
+    try {
+      const target = view?.resolveNavigation(cfi)
+      const doc = view?.renderer.getContents?.().find((c) => c.index === target?.index)?.doc
+      const range = doc && target?.anchor?.(doc)
+      if (!doc || !range) return
+      setLookupHighlight(doc, range)
+      highlightedDoc = doc
+    } catch (err) {
+      console.warn('無法標示書中位置', err)
     }
   }
 
@@ -161,6 +190,7 @@
     if (!Number.isFinite(detail.fraction)) return
     progress = detail.fraction
     chapter = detail.tocItem?.label ?? ''
+    if (peek) return
     library.saveLocation(bookId, { cfi: detail.cfi, progress }).catch((err) => {
       console.error('儲存閱讀位置失敗', err)
     })
@@ -205,10 +235,12 @@
         await v.open(book.file)
         if (cancelled) return
         v.renderer.addEventListener('relocate', onRendererRelocate)
-        await v.init(book.lastCfi ? { lastLocation: book.lastCfi } : { showTextStart: true })
+        const start = jumpTo ?? book.lastCfi
+        await v.init(start ? { lastLocation: start } : { showTextStart: true })
         if (cancelled) return
         // 要等第一個章節載入後再設樣式，否則 foliate 會讀到空的 view
         v.renderer.setStyles?.(BOOK_CSS)
+        if (jumpTo) highlightCfi(jumpTo)
       } catch (err) {
         if (cancelled) return
         console.error('開啟書本失敗', err)
@@ -232,13 +264,14 @@
 
 <div class="reader">
   <header>
-    <button onclick={onClose} aria-label="回書庫">← 書庫</button>
+    <button onclick={onClose} aria-label={peek ? '回單字本' : '回書庫'}>{peek ? '← 單字本' : '← 書庫'}</button>
     <div class="heading">
       <span class="title">{title}</span>
       {#if chapter}<span class="chapter">{chapter}</span>{/if}
     </div>
     <span class="progress">{Math.round(progress * 100)}%</span>
   </header>
+  {#if peek}<p class="peek-note">從單字本開啟：可以自由翻閱，不會改變你的閱讀進度。</p>{/if}
 
   <div class="stage">
     <div class="view-host" bind:this={container}></div>
@@ -277,4 +310,5 @@
   .view-host :global(foliate-view) { display: block; width: 100%; height: 100%; }
   .status { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--muted); }
   .error { color: var(--danger); }
+  .peek-note { margin: 0; padding: 6px 16px; font-size: 0.85rem; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); }
 </style>

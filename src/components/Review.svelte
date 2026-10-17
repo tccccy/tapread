@@ -5,6 +5,7 @@
   import { MAX_LEVEL, type ReviewGrade, type VocabEntry, type VocabExample } from '../lib/vocab/model'
   import { languageLabel } from '../lib/languageName'
   import type { ReviewMode } from './VocabHome.svelte'
+  import ExampleSentence from './ExampleSentence.svelte'
 
   let { language, bookId, mode, onDone }: {
     language: string
@@ -37,12 +38,6 @@
     queue = next
     flipped = false
     example = next[0] ? pickExample(next[0]) : null
-  }
-
-  // 例句中把目標字切出來加粗（不使用 {@html}，避免書本內容造成 XSS）
-  const splitSentence = (sentence: string, word: string) => {
-    const i = sentence.toLocaleLowerCase().indexOf(word.toLocaleLowerCase())
-    return i < 0 ? [sentence, '', ''] : [sentence.slice(0, i), sentence.slice(i, i + word.length), sentence.slice(i + word.length)]
   }
 
   onMount(async () => {
@@ -122,9 +117,8 @@
     <section class="card">
       <p class="lemma">{card.lemma}</p>
       {#if example}
-        {@const [pre, hit, post] = splitSentence(example.sentence, example.word)}
-        <p class="sentence">{pre}<strong>{hit}</strong>{post}</p>
-        <p class="source">— {example.bookTitle}</p>
+        <p class="sentence"><ExampleSentence sentence={example.sentence} word={example.word} /></p>
+        <p class="source">— 《{example.bookTitle}》原句</p>
       {/if}
 
       {#if !flipped}
@@ -140,7 +134,7 @@
               <summary>其他例句（{card.examples.length - 1}）</summary>
               <ul>
                 {#each card.examples.filter((x) => x !== example) as x (x.sentence + x.word)}
-                  <li><span>{x.sentence}</span><span class="muted">→ {x.contextMeaning}</span></li>
+                  <li><span><ExampleSentence sentence={x.sentence} word={x.word} /></span><span class="muted">→ {x.contextMeaning}</span></li>
                 {/each}
               </ul>
             </details>
@@ -168,7 +162,6 @@
   }
   .lemma { font-size: 2rem; font-weight: 700; margin: 0; text-align: center; overflow-wrap: anywhere; }
   .sentence { font-size: 1.1rem; line-height: 1.6; margin: 0; }
-  .sentence strong { background: rgba(120, 170, 220, 0.35); border-radius: 4px; padding: 0 2px; }
   .source { color: var(--muted); font-size: 0.85rem; margin: 0; text-align: right; }
   .flip { margin-top: 12px; }
   .answer { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }

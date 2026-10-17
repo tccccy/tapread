@@ -5,12 +5,17 @@
   import { createVocabStore } from '../lib/vocab/store'
   import { isDue, MAX_LEVEL, type VocabEntry } from '../lib/vocab/model'
   import { languageLabel } from '../lib/languageName'
+  import VocabList from './VocabList.svelte'
 
   export type ReviewMode = 'due' | 'all'
 
-  let { onBack, onReview }: {
+  let { initialLanguage, initialBookId, onBack, onReview, onJump }: {
+    /** 從閃卡或書中返回時，回到原本的語言分頁與書本篩選 */
+    initialLanguage?: string
+    initialBookId?: number
     onBack: () => void
     onReview: (language: string, bookId: number | undefined, mode: ReviewMode) => void
+    onJump: (bookId: number, cfi: string, language: string, filterBookId: number | undefined) => void
   } = $props()
 
   const vocab = createVocabStore(db)
@@ -39,10 +44,39 @@
     if (language === lang) entries = list
   }
 
+  // 篩選的書已經沒有字時，取消篩選（避免下拉選單空白、清單空白）
+  const keepBookFilter = (id: number | undefined) =>
+    id !== undefined && entries.some((e) => e.bookIds.includes(id)) ? id : undefined
+
+  // 清單中刪除後重新整理；目前語言的字被刪光時切到第一個語言
+  async function refresh() {
+    try {
+      languages = await vocab.languages()
+      if (languages.some((l) => l.language === language)) {
+        const lang = language
+        const list = await vocab.list(lang)
+        if (language !== lang) return
+        entries = list
+        bookId = keepBookFilter(bookId)
+      } else if (languages[0]) {
+        await selectLanguage(languages[0].language)
+      } else {
+        entries = []
+      }
+    } catch (e) {
+      console.error('重新整理單字本失敗', e)
+      error = '讀取單字本失敗，請重新整理頁面。'
+    }
+  }
+
   onMount(async () => {
     try {
       ;[languages, books] = await Promise.all([vocab.languages(), library.listBooks()])
-      if (languages.length > 0) await selectLanguage(languages[0].language)
+      const start = languages.find((l) => l.language === initialLanguage) ?? languages[0]
+      if (start) {
+        await selectLanguage(start.language)
+        if (start.language === initialLanguage) bookId = keepBookFilter(initialBookId)
+      }
     } catch (e) {
       console.error('讀取單字本失敗', e)
       error = '讀取單字本失敗，請重新整理頁面。'
@@ -102,6 +136,15 @@
         <button onclick={() => onReview(language, bookId, 'all')}>全部未熟的字再練一次（{learningCount}）</button>
       {/if}
     </div>
+
+    <VocabList
+      {entries}
+      {language}
+      {bookId}
+      bookIds={new Set(books.map((b) => b.id))}
+      onChanged={refresh}
+      onJump={(x) => x.cfi && onJump(x.bookId, x.cfi, language, bookId)}
+    />
   {/if}
 </main>
 

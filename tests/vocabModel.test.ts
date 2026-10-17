@@ -42,6 +42,15 @@ describe('addExample', () => {
     expect(merged.level).toBe(first.level)
   })
 
+  it('記下例句在書中的位置（CFI），供「回到書中」使用', () => {
+    const e = addExample(undefined, input({ cfi: 'epubcfi(/6/4!/4/2,/1:10,/1:15)' }), NOW)
+    expect(e.examples[0].cfi).toBe('epubcfi(/6/4!/4/2,/1:10,/1:15)')
+  })
+
+  it('沒有位置時不存 cfi 欄位', () => {
+    expect(addExample(undefined, input(), NOW).examples[0]).not.toHaveProperty('cfi')
+  })
+
   it('同字同句重複收藏不會產生重複例句', () => {
     const e = addExample(addExample(undefined, input(), NOW), input(), NOW)
     expect(e.examples).toHaveLength(1)

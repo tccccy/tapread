@@ -17,6 +17,8 @@ export interface VocabExample {
   bookId: number
   bookTitle: string
   savedAt: number
+  /** 書中位置（EPUB CFI），用於「回到書中」；舊資料沒有 */
+  cfi?: string
 }
 
 export interface VocabEntry {
@@ -42,6 +44,7 @@ export interface SaveInput {
   definition: Definition
   bookId: number
   bookTitle: string
+  cfi?: string
 }
 
 const norm = (s: string) => s.toLocaleLowerCase()
@@ -67,6 +70,7 @@ export function addExample(entry: VocabEntry | undefined, input: SaveInput, now:
     bookId: input.bookId,
     bookTitle: input.bookTitle,
     savedAt: now,
+    ...(input.cfi ? { cfi: input.cfi } : {}),
   }
   const base: VocabEntry = entry ?? {
     id: vocabId(input.language, d.lemma),

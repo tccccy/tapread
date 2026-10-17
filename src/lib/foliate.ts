@@ -26,6 +26,8 @@ export interface FoliateView extends HTMLElement {
   renderer: FoliateRenderer
   open(file: File | Blob): Promise<void>
   init(opts: { lastLocation?: string | null; showTextStart?: boolean }): Promise<void>
+  getCFI(index: number, range?: Range): string
+  resolveNavigation(target: string): { index: number; anchor?: (doc: Document) => Range | null } | undefined
   goLeft(): Promise<void>
   goRight(): Promise<void>
   close(): void

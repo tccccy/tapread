@@ -5,31 +5,47 @@
   import VocabHome, { type ReviewMode } from './components/VocabHome.svelte'
   import Review from './components/Review.svelte'
 
+  /** 單字本的位置（語言分頁＋書本篩選），從閃卡或書中返回時還原 */
+  type VocabPlace = { language?: string; bookId?: number }
+  type ReaderScreen = { name: 'reader'; bookId: number; jumpTo?: string; returnToVocab?: VocabPlace }
+
   type Screen =
     | { name: 'library' }
-    | { name: 'reader'; bookId: number }
-    | { name: 'settings'; returnTo: number | null }
-    | { name: 'vocab' }
+    | ReaderScreen
+    | { name: 'settings'; returnTo: ReaderScreen | null }
+    | ({ name: 'vocab' } & VocabPlace)
     | { name: 'review'; language: string; bookId: number | undefined; mode: ReviewMode }
 
   let screen = $state<Screen>({ name: 'library' })
 
   const openLibrary = () => (screen = { name: 'library' })
   const openBook = (bookId: number) => (screen = { name: 'reader', bookId })
-  const openSettings = (returnTo: number | null) => (screen = { name: 'settings', returnTo })
-  const openVocab = () => (screen = { name: 'vocab' })
+  const openVocab = (place: VocabPlace = {}) => (screen = { name: 'vocab', ...place })
 </script>
 
 {#if screen.name === 'library'}
-  <Library onOpen={openBook} onOpenSettings={() => openSettings(null)} onOpenVocab={openVocab} />
+  <Library onOpen={openBook} onOpenSettings={() => (screen = { name: 'settings', returnTo: null })} onOpenVocab={() => openVocab()} />
 {:else if screen.name === 'reader'}
-  {@const bookId = screen.bookId}
-  <Reader {bookId} onClose={openLibrary} onOpenSettings={() => openSettings(bookId)} />
+  {@const reader = screen}
+  <Reader
+    bookId={reader.bookId}
+    jumpTo={reader.jumpTo}
+    onClose={() => (reader.returnToVocab ? openVocab(reader.returnToVocab) : openLibrary())}
+    onOpenSettings={() => (screen = { name: 'settings', returnTo: reader })}
+  />
 {:else if screen.name === 'settings'}
   {@const returnTo = screen.returnTo}
-  <Settings onBack={() => (returnTo === null ? openLibrary() : openBook(returnTo))} />
+  <Settings onBack={() => (returnTo ? (screen = returnTo) : openLibrary())} />
 {:else if screen.name === 'vocab'}
-  <VocabHome onBack={openLibrary} onReview={(language, bookId, mode) => (screen = { name: 'review', language, bookId, mode })} />
+  <VocabHome
+    initialLanguage={screen.language}
+    initialBookId={screen.bookId}
+    onBack={openLibrary}
+    onReview={(language, bookId, mode) => (screen = { name: 'review', language, bookId, mode })}
+    onJump={(bookId, cfi, language, filterBookId) =>
+      (screen = { name: 'reader', bookId, jumpTo: cfi, returnToVocab: { language, bookId: filterBookId } })}
+  />
 {:else}
-  <Review language={screen.language} bookId={screen.bookId} mode={screen.mode} onDone={openVocab} />
+  {@const { language, bookId, mode } = screen}
+  <Review {language} {bookId} {mode} onDone={() => openVocab({ language, bookId })} />
 {/if}
