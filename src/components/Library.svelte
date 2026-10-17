@@ -17,6 +17,8 @@
     onOpenVocab: () => void
   } = $props()
 
+  // 還沒設定金鑰時顯示首次使用引導（從設定頁回來會重新掛載、重新判斷）
+  const needsKey = !loadSettings(localStorage).geminiApiKey
   let books = $state<BookSummary[]>([])
   let error = $state('')
   let busy = $state(false)
@@ -124,6 +126,19 @@
     </div>
   </header>
 
+  {#if needsKey}
+    <section class="welcome" aria-labelledby="welcome-title">
+      <h2 id="welcome-title">歡迎使用多語閱讀器</h2>
+      <p>讀外文時點一下不懂的字，就會看到它在這一句裡的中文意思，還能收藏起來複習。</p>
+      <ol>
+        <li><strong>設定 Gemini 金鑰</strong>：免費，約 2 分鐘，點字查詢需要它</li>
+        <li><strong>匯入一本書</strong>：EPUB、PDF 或 Word（.docx）</li>
+      </ol>
+      <button class="primary" onclick={onOpenSettings}>設定金鑰</button>
+      <p class="muted small">你的書、單字本與金鑰都只存在這台裝置，不會上傳到任何伺服器。</p>
+    </section>
+  {/if}
+
   {#if error}
     <p class="error" role="alert">{error}</p>
   {/if}
@@ -173,7 +188,7 @@
   .empty { text-align: center; padding: 15vh 0; }
   .muted { color: var(--muted); font-size: 0.9rem; }
   ul { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 10px; }
-  li { display: flex; gap: 8px; }
+  ul > li { display: flex; gap: 8px; }
   .book {
     flex: 1;
     min-width: 0;
@@ -185,6 +200,14 @@
   }
   .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .remove { color: var(--danger); }
+  .welcome {
+    margin: 16px 0; padding: 16px 18px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--accent);
+  }
+  .welcome h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .welcome p { margin: 0 0 8px; line-height: 1.6; }
+  .welcome ol { margin: 0 0 12px; padding-left: 22px; line-height: 1.8; }
+  .small { font-size: 0.8rem; margin: 10px 0 0 !important; }
   .lang {
     min-height: 44px; max-width: 8.5rem; font: inherit; font-size: 16px; color: var(--accent);
     background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius); padding: 0 6px;

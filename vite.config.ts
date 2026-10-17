@@ -110,7 +110,8 @@ export default defineConfig({
     copyPdfjsAssets(),
     svelte(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 有新版本時先詢問（UpdateBanner），不在使用者閱讀時突然換版
+      registerType: 'prompt',
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: '多語閱讀器',

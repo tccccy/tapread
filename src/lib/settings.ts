@@ -41,11 +41,17 @@ export function loadSettings(storage: KeyValueStorage): Settings {
   }
 }
 
-export function saveSettings(storage: KeyValueStorage, settings: Settings): Settings {
+/** 正規化並驗證；格式錯誤時丟 SettingsValidationError */
+export function validateSettings(settings: Settings): Settings {
   const next = normalize(settings)
   if (!API_KEY.test(next.geminiApiKey)) throw new SettingsValidationError('金鑰格式不正確：不能含空白、換行或全形字元。')
   if (!MODEL_NAME.test(next.geminiModel)) throw new SettingsValidationError('模型名稱只能包含英數字、點與連字號。')
   if (!LANGUAGE_CODE.test(next.defaultLanguage)) throw new SettingsValidationError('預設學習語言的代碼不正確。')
+  return next
+}
+
+export function saveSettings(storage: KeyValueStorage, settings: Settings): Settings {
+  const next = validateSettings(settings)
   storage.setItem(STORAGE_KEY, JSON.stringify(next))
   return next
 }

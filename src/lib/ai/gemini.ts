@@ -128,3 +128,31 @@ export function createGeminiDefiner({ apiKey, model, fetchImpl = defaultFetch, t
     }
   }
 }
+
+/** 確認金鑰與模型可用：查詢模型資訊，不產生內容、不消耗額度 */
+export async function testGeminiKey({ apiKey, model, fetchImpl = defaultFetch, timeoutMs = 15_000 }: GeminiOptions): Promise<{ displayName: string }> {
+  const key = apiKey.trim()
+  if (!key) throw new AiError('no-key', '未設定 Gemini API 金鑰')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let res: Response
+  try {
+    res = await fetchImpl(`${ENDPOINT}/${encodeURIComponent(model)}`, {
+      method: 'GET',
+      headers: { 'x-goog-api-key': key },
+      signal: controller.signal,
+    })
+  } catch (e) {
+    if (controller.signal.aborted) throw new AiError('timeout', '測試金鑰逾時', { cause: e })
+    throw new AiError('network', '測試金鑰時網路錯誤', { cause: e })
+  } finally {
+    clearTimeout(timer)
+  }
+  const body = (await res.json().catch(() => ({}))) as GeminiErrorBody & { displayName?: string }
+  if (!res.ok) {
+    const kind = classifyHttpError(res.status, body)
+    const quota = kind === 'quota' ? parseQuotaError(body) : undefined
+    throw new AiError(kind, `Gemini HTTP ${res.status} ${body.error?.status ?? ''}`.trim(), { quota })
+  }
+  return { displayName: body.displayName || model }
+}

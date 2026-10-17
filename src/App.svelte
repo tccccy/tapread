@@ -4,6 +4,7 @@
   import Settings from './components/Settings.svelte'
   import VocabHome, { type ReviewMode } from './components/VocabHome.svelte'
   import Review from './components/Review.svelte'
+  import UpdateBanner from './components/UpdateBanner.svelte'
 
   /** 單字本的位置（語言分頁＋書本篩選），從閃卡或書中返回時還原 */
   type VocabPlace = { language?: string; bookId?: number }
@@ -49,3 +50,5 @@
   {@const { language, bookId, mode } = screen}
   <Review {language} {bookId} {mode} onDone={() => openVocab({ language, bookId })} />
 {/if}
+
+<UpdateBanner />
