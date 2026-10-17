@@ -279,7 +279,7 @@
   h1 { margin: 2px 0 0; font-size: 1.7rem; line-height: 1.25; overflow-wrap: anywhere; }
   .author { margin: 0; font-size: 1.05rem; }
   .meta { margin: 0; color: var(--muted); font-size: 0.85rem; }
-  .status { font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .status { font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
   .status.finished { background: var(--accent); color: var(--accent-text); }
   .progress { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--muted); font-size: 0.85rem; margin: 4px 0; }
   .bar { flex: 1; height: 6px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
@@ -300,7 +300,7 @@
   .new-shelf input { flex: 1; min-width: 10em; min-height: 44px; padding: 0 14px; border-radius: 999px; }
 
   .vocab-link { width: 100%; text-align: left; border-radius: var(--radius); }
-  .vocab-link strong { color: var(--accent); font-size: 1.15em; }
+  .vocab-link strong { color: var(--accent-ink); font-size: 1.15em; }
 
   dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; margin: 0 0 14px; align-items: center; }
   dt { color: var(--muted); font-size: 0.85rem; }

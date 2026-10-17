@@ -3,6 +3,21 @@
   import { languageLabel, COMMON_LANGUAGES } from '../lib/languageName'
   import { testGeminiKey, aiErrorMessage, AiError } from '../lib/ai/gemini'
   import BackupSection from './BackupSection.svelte'
+  import { loadAppearance, saveAppearance, applyAppearance, type Appearance } from '../lib/appearance'
+
+  const APPEARANCES: { id: Appearance; label: string }[] = [
+    { id: 'system', label: '跟隨系統' },
+    { id: 'light', label: '淺色' },
+    { id: 'dark', label: '深色' },
+  ]
+  let appearance = $state<Appearance>(loadAppearance(localStorage))
+
+  // 外觀點了就生效，不用按「儲存」
+  function chooseAppearance(next: Appearance) {
+    appearance = next
+    saveAppearance(localStorage, next)
+    applyAppearance(next)
+  }
 
   const AI_STUDIO_KEY_URL = 'https://aistudio.google.com/apikey'
 
@@ -74,6 +89,17 @@
     <h1>設定</h1>
   </header>
 
+  <section class="appearance">
+    <h2>外觀</h2>
+    <div class="segmented" role="radiogroup" aria-label="外觀">
+      {#each APPEARANCES as a (a.id)}
+        <button type="button" role="radio" aria-checked={appearance === a.id} class:selected={appearance === a.id}
+          onclick={() => chooseAppearance(a.id)}>{a.label}</button>
+      {/each}
+    </div>
+    <p class="muted">跟隨系統：白天米白、晚上深咖啡。</p>
+  </section>
+
   <form onsubmit={save}>
     <section>
       <h2>Gemini API 金鑰</h2>
@@ -138,6 +164,10 @@
   header { display: flex; align-items: center; gap: 12px; }
   h1 { font-size: 1.5rem; margin: 0.5rem 0; }
   h2 { font-size: 1rem; margin: 0 0 6px; }
+  .appearance { margin-top: 16px; }
+  .segmented { display: flex; max-width: 360px; background: var(--accent-soft); border-radius: 999px; padding: 3px; }
+  .segmented button { flex: 1; min-height: 40px; padding: 0.3rem 0; border: none; background: none; }
+  .segmented .selected { background: var(--surface-solid); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); font-weight: 600; }
   section { margin-top: 24px; }
   .row { display: flex; gap: 8px; }
   input {
@@ -160,8 +190,8 @@
   .steps code { font-size: 0.9em; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
   .test { margin-top: 10px; width: 100%; }
   .muted { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: 0 0 8px; }
-  a { color: var(--accent); }
+  a { color: var(--accent-ink); }
   .actions { margin-top: 24px; display: flex; align-items: center; gap: 12px; }
-  .ok { color: var(--accent); }
+  .ok { color: var(--accent-ink); }
   .error { color: var(--danger); }
 </style>

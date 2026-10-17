@@ -10,6 +10,7 @@
   import { groupBooks, continueReading, UNSHELVED_KEY, type GroupMode } from '../lib/books/bookshelf'
   import { saveCoverOnImport } from '../lib/books/covers'
   import BookCover from './BookCover.svelte'
+  import ReadingStatsCard from './ReadingStatsCard.svelte'
 
   let { onOpenBook, onRead, onOpenSettings }: {
     /** 書的頁面（評分、評語） */
@@ -205,6 +206,8 @@
     </section>
   {/if}
 
+  {#if loaded && books.length > 0}<ReadingStatsCard />{/if}
+
   {#if loaded && books.length === 0}
     <section class="empty glass">
       <p class="big">書架是空的</p>
@@ -287,7 +290,7 @@
   .hero { display: flex; gap: 20px; padding: 18px; margin-bottom: 22px; align-items: center; }
   .hero-cover { padding: 0; border: none; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; min-height: 0; flex-shrink: 0; }
   .hero-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-  .eyebrow { font-size: 0.75rem; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; }
+  .eyebrow { font-size: 0.75rem; letter-spacing: 0.12em; color: var(--accent-ink); text-transform: uppercase; }
   .hero h2 { margin: 0; font-size: 1.35rem; line-height: 1.3; overflow-wrap: anywhere; }
   .author { margin: 0; color: var(--muted); }
   .progress { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 8px; color: var(--muted); font-size: 0.85rem; }

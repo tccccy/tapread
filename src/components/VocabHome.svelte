@@ -15,6 +15,7 @@
   import { languageLabel } from '../lib/languageName'
   import VocabList from './VocabList.svelte'
   import VocabFilterPanel from './VocabFilterPanel.svelte'
+  import { saveFile, isShareCancel } from '../lib/saveFile'
 
   let { initialPlace, onReview, onJump }: {
     initialPlace?: VocabPlace
@@ -39,6 +40,32 @@
   const learning = $derived(filtered.filter((e) => e.level < MAX_LEVEL))
   const knownCount = $derived(filtered.length - learning.length)
   const place = $derived<VocabPlace>({ language, filters })
+
+  let exporting = $state(false)
+  let exportError = $state('')
+
+  // 匯出目前篩選出的字（含書中例句）；匯出程式只在用到時才載入
+  async function exportWord() {
+    exporting = true
+    exportError = ''
+    try {
+      const { buildVocabDocx, vocabDocxFileName, DOCX_MIME } = await import('../lib/vocab/exportDocx')
+      const label = languageLabel(language)
+      const today = new Date()
+      const data = buildVocabDocx(filtered, {
+        title: `${label}單字本`,
+        subtitle: `${filtered.length} 個字・匯出於 ${today.toLocaleDateString('zh-TW')}・TapRead`,
+      })
+      const file = new File([data as Uint8Array<ArrayBuffer>], vocabDocxFileName(label, today), { type: DOCX_MIME })
+      await saveFile(file, `${label}單字本`)
+    } catch (e) {
+      if (isShareCancel(e)) return
+      console.error('匯出 Word 失敗', e)
+      exportError = '匯出失敗，請再試一次。'
+    } finally {
+      exporting = false
+    }
+  }
 
   async function selectLanguage(lang: string, keepFilters = false) {
     language = lang
@@ -133,6 +160,10 @@
       {#if learning.length > 0}
         <button onclick={() => onReview(place, learning.map((e) => e.id))}>全部未熟的字再練一次（{learning.length}）</button>
       {/if}
+      <button disabled={exporting || filtered.length === 0} onclick={exportWord}>
+        {exporting ? '匯出中…' : `匯出 Word（${filtered.length} 個字，含書中例句）`}
+      </button>
+      {#if exportError}<p class="error" role="alert">{exportError}</p>{/if}
     </div>
 
     <VocabList

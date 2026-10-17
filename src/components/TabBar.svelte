@@ -53,7 +53,7 @@
     color: var(--muted);
     font-size: 0.75rem;
   }
-  button.active { background: var(--accent); color: var(--accent-text); box-shadow: 0 6px 16px rgba(138, 90, 59, 0.28); }
+  button.active { background: var(--accent); color: var(--accent-text); box-shadow: 0 6px 16px var(--accent-shadow); }
   svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   /* 電腦寬螢幕：改成左側欄（像 Readowl） */
@@ -75,7 +75,7 @@
       font-family: var(--font-serif);
       font-size: 1.5rem;
       font-weight: 600;
-      color: var(--accent);
+      color: var(--accent-ink);
       padding: 0 12px 18px;
     }
     button {

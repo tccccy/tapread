@@ -75,8 +75,8 @@ interface Palette { background: string; text: string; link: string; scheme: 'lig
 
 // 與 app.css 的 --paper 一致
 export const PALETTES: Record<Exclude<ThemeId, 'auto'>, Palette & { label: string }> = {
-  paper: { label: '米白', background: '#fbf7f0', text: '#3a2a20', link: '#8a5a3b', scheme: 'light' },
-  sepia: { label: '羊皮紙', background: '#f1e5cf', text: '#4b3621', link: '#8a5a3b', scheme: 'light' },
+  paper: { label: '米白', background: '#fbf7f0', text: '#3a2a20', link: '#876449', scheme: 'light' },
+  sepia: { label: '羊皮紙', background: '#f1e5cf', text: '#4b3621', link: '#876449', scheme: 'light' },
   night: { label: '夜間', background: '#1f1813', text: '#eadfd1', link: '#d3baa0', scheme: 'dark' },
 }
 

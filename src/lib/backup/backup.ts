@@ -5,8 +5,8 @@ import type { ReaderDb } from '../db'
 import { DEFAULT_MAX_BOOK_BYTES } from '../bookFile'
 import type { VocabEntry } from '../vocab/model'
 import {
-  BACKUP_APP, BACKUP_VERSION, BackupFormatError, mergeBookMeta, mergeProgress, mergeVocabEntry, parseManifest,
-  sanitizeBook, sanitizeVocabEntry, type BackupBook, type BackupManifest,
+  BACKUP_APP, BACKUP_VERSION, BackupFormatError, mergeBookMeta, mergeProgress, mergeReadingDay, mergeVocabEntry, parseManifest,
+  sanitizeBook, sanitizeReadingDay, sanitizeVocabEntry, type BackupBook, type BackupManifest,
 } from './merge'
 
 // 單字本的 manifest 不會太大；設上限避免惡意的 zip 炸彈
@@ -61,6 +61,7 @@ export async function exportBackup(db: ReaderDb, { includeBooks }: { includeBook
   }
   const manifest: BackupManifest = {
     app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: Date.now(), books, vocab: await db.vocab.toArray(),
+    readingDays: await db.readingDays.toArray(),
   }
   zip['manifest.json'] = strToU8(JSON.stringify(manifest))
   return zipSync(zip)
@@ -120,6 +121,8 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
   const books = manifest.books.map(sanitizeBook).filter((b): b is BackupBook => b !== null)
   const vocab = manifest.vocab.map(sanitizeVocabEntry).filter((e): e is VocabEntry => e !== null)
   summary.invalid += manifest.books.length - books.length + manifest.vocab.length - vocab.length
+  const rawDays = Array.isArray(manifest.readingDays) ? manifest.readingDays : []
+  const readingDays = rawDays.map(sanitizeReadingDay).filter((d) => d !== null)
 
   const localByHash = new Map([...(await bookHashes(db))].map(([id, hash]) => [hash, id]))
   // 備份中的書號 → 本機書號
@@ -160,7 +163,7 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
     summary.booksAdded++
   }
 
-  return db.transaction('rw', db.books, db.vocab, db.shelves, async () => {
+  return db.transaction('rw', [db.books, db.vocab, db.shelves, db.readingDays], async () => {
     // 只替真的有對應到本機的書建立書架，略過的書不會留下空書架
     const mapped = books.filter((b) => bookIdMap.has(b.id))
     const shelfIdOf = await resolveShelves(db, mapped.flatMap((b) => b.shelves ?? []))
@@ -184,6 +187,10 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
       await db.vocab.put(mergeVocabEntry(local, incoming, bookIdMap))
       if (local) summary.wordsMerged++
       else summary.wordsAdded++
+    }
+    for (const day of readingDays) {
+      const merged = mergeReadingDay(await db.readingDays.get(day.date), day)
+      if (merged) await db.readingDays.put(merged)
     }
     return summary
   })

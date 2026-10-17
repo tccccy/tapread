@@ -136,6 +136,26 @@ describe('備份與還原', () => {
     expect((await b.lib.listBooks())[0].shelfIds).toEqual([shelves[0].id])
   })
 
+  it('閱讀紀錄一起搬過去；同一天取較多的那份，重複匯入不會加倍', async () => {
+    const { a } = await seed()
+    await a.db.readingDays.bulkPut([{ date: '2026-10-17', seconds: 600 }, { date: '2026-10-18', seconds: 120 }])
+    const b = device()
+    await b.db.readingDays.put({ date: '2026-10-18', seconds: 300 })
+    const data = await exportBackup(a.db, { includeBooks: false })
+    await importBackup(b.db, data)
+    await importBackup(b.db, data)
+    expect(await b.db.readingDays.get('2026-10-17')).toEqual({ date: '2026-10-17', seconds: 600 })
+    expect(await b.db.readingDays.get('2026-10-18')).toEqual({ date: '2026-10-18', seconds: 300 })
+  })
+
+  it('閱讀紀錄格式不正確的略過', async () => {
+    const manifest = { app: 'tapread', version: 1, exportedAt: 0, books: [], vocab: [],
+      readingDays: [{ date: '2026-10-18', seconds: 60 }, { date: 'x', seconds: 1 }, { date: '2026-10-19', seconds: 999999 }] }
+    const b = device()
+    await importBackup(b.db, zipSync({ 'manifest.json': strToU8(JSON.stringify(manifest)) }))
+    expect(await b.db.readingDays.toArray()).toEqual([{ date: '2026-10-18', seconds: 60 }])
+  })
+
   it('不是 zip 或不是 TapRead 備份時丟 BackupFormatError', async () => {
     const b = device()
     await expect(importBackup(b.db, new TextEncoder().encode('hola'))).rejects.toThrow(BackupFormatError)

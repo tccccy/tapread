@@ -61,4 +61,4 @@ export function setLookupHighlight(doc: Document, range: Range | null) {
 }
 
 // 正在查的字：咖啡底白字，和單字本的焦糖色區分
-export const LOOKUP_HIGHLIGHT_CSS = `::highlight(${HIGHLIGHT_NAME}) { background-color: #8a5a3b; color: #fff8ef; }`
+export const LOOKUP_HIGHLIGHT_CSS = `::highlight(${HIGHLIGHT_NAME}) { background-color: #9c7a5c; color: #fffaf3; }`

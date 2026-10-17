@@ -176,6 +176,20 @@ PWA 閱讀器（靜態網站）
 - foliate-js paginator 建置時修補：套用樣式後若已離開閱讀頁不再丟錯
 - 測試：247 個單元測試
 
+### 奶茶色與手動深淺色（2026-10-18）
+- 主色改為奶茶色（淺色 `#c2a385`、深色 `#c4a88c`）；按鈕上用深咖啡字，文字用途改用較深的 `--accent-ink` 才讀得清楚
+- 設定頁「外觀」：跟隨系統／淺色／深色，點了立即生效；存在 localStorage `tapread.appearance`，啟動時寫到 `<html data-theme>`（`src/lib/appearance.ts`）
+- 閱讀頁紙張「跟隨系統」時，書本內文跟著設定頁手動選的深淺色
+- 測試：253 個單元測試
+
+### 片語、匯出 Word、閱讀統計（2026-10-18）
+- **片語查詢與收藏**：書中拖曳選取幾個字（最多 8 個字），選取停下後上方出現「查詢『…』」按鈕；送給 AI 時改用 phrase 的提示，lemma 為原形片語（例如 se dio cuenta → darse cuenta）。收藏後以段落為單位比對（可跨 `<em>` 等標籤），片語內的單字不重複上色（`src/lib/text/selectPhrase.ts`、`phraseMatch.ts`）
+- **匯出 Word**：單字本「匯出 Word」把目前篩選出的字（單字、CEFR、詞性、意思、書中例句＋此句意思＋書名）做成 .docx 表格；用 fflate 自行組 docx，不加套件（`src/lib/vocab/exportDocx.ts`）。平板手機走分享選單（`src/lib/saveFile.ts`，備份也共用）
+- **閱讀統計與目標**：閱讀頁計時，最近 3 分鐘內有翻頁、點字、選字才算，切到背景暫停，每分鐘寫入 IndexedDB（v6 新增 `readingDays`）。書架首頁統計卡：今天分鐘數對照每日目標（可選 5–90 分鐘，存 localStorage `tapread.readingGoal`）、連續天數（一天讀滿 1 分鐘才算）、最近 7 天長條圖、7 天新收藏的字
+- 備份加入閱讀紀錄：同一天取較多的那份，重複匯入不會加倍
+- 發布腳本拿掉 commit 訊息中的 AI 署名（GitHub 不顯示 Claude 為貢獻者）
+- 測試：288 個單元測試
+
 ### 下一步
 - 自動同步到使用者自己的 Google 雲端硬碟（需在 Google Cloud 建 OAuth 用戶端；測試階段要逐一加入使用者的 Gmail）
 - P3：詞形還原（收藏 abrir 後，書中 abre、abrió 也上色）

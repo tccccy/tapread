@@ -117,9 +117,9 @@
   summary::-webkit-details-marker { display: none; }
   .lemma { font-weight: 700; font-size: 1.1rem; }
   .pos { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; }
-  .cefr { color: var(--accent); border-color: var(--accent); }
+  .cefr { color: var(--accent-ink); border-color: var(--accent); }
   .gist { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .level { font-size: 0.75rem; color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+  .level { font-size: 0.75rem; color: var(--accent-ink); letter-spacing: 1px; white-space: nowrap; }
   .detail { padding: 0 14px 14px; border-top: 1px solid var(--border); }
   .detail p { margin: 6px 0 0; line-height: 1.5; }
   .label { color: var(--muted); font-size: 0.8rem; margin-right: 8px; }
@@ -130,7 +130,7 @@
   .source { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .link { border: none; background: transparent; padding: 0 4px; min-height: 32px; color: var(--muted); font-size: 0.8rem; text-decoration: underline; }
   .danger { color: var(--danger); }
-  .jump { color: var(--accent); }
+  .jump { color: var(--accent-ink); }
   .muted { color: var(--muted); font-size: 0.9rem; }
   .error { color: var(--danger); }
 </style>

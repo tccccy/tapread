@@ -40,6 +40,12 @@ export interface StoredCover {
 }
 
 // 檔案本體另存一表，列書目時不必把整本書讀進記憶體（iPad 上書多時很重要）
+/** 某一天的閱讀時間（本地日期 YYYY-MM-DD） */
+export interface ReadingDay {
+  date: string
+  seconds: number
+}
+
 export interface StoredFile {
   id: number
   blob: Blob
@@ -58,6 +64,7 @@ export type ReaderDb = Dexie & {
   vocab: EntityTable<VocabEntry, 'id'>
   shelves: EntityTable<Shelf, 'id'>
   covers: EntityTable<StoredCover, 'id'>
+  readingDays: EntityTable<ReadingDay, 'date'>
 }
 
 // 資料庫名稱沿用改名（TapRead）前的舊名：改掉會讓使用者已存的書與單字本讀不到
@@ -69,6 +76,7 @@ export function createDb(name = 'polyglot-reader'): ReaderDb {
   // 以字形查詢已收藏的例句（AI 回傳的原形可能每次不同）
   db.version(4).stores({ vocab: 'id, language, dueAt, *forms' })
   db.version(5).stores({ shelves: 'id, order', covers: 'id' })
+  db.version(6).stores({ readingDays: 'date' })
   return db
 }
 

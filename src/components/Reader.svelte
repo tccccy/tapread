@@ -11,12 +11,16 @@
   import { tapToWord } from '../lib/text/tapToWord'
   import { setLookupHighlight } from '../lib/text/domHit'
   import { applyVocabHighlights } from '../lib/text/vocabHighlight'
+  import { selectionToLookup, type SelectedPhrase } from '../lib/text/selectPhrase'
   import { createVocabStore } from '../lib/vocab/store'
   import type { Definition } from '../lib/ai/definition'
   import LookupCard, { type CardState } from './LookupCard.svelte'
   import ReadingSettings from './ReadingSettings.svelte'
   import { loadReadingPrefs, saveReadingPrefs, bookCss, webFamiliesOf, WIDTHS, type ReadingPrefs } from '../lib/reading/prefs'
   import { loadWebFonts, fontFaceCss } from '../lib/reading/fonts'
+  import { loadAppearance, bookTheme } from '../lib/appearance'
+  import { createActivityClock } from '../lib/stats/readingStats'
+  import { addReadingTime } from '../lib/stats/readingLog'
 
   let { bookId, jumpTo, backLabel = '書架', onClose, onOpenSettings }: {
     bookId: number
@@ -98,7 +102,9 @@
     await loadWebFonts(families).catch((err) => console.warn('載入字型失敗，改用系統字體', err))
     if (seq !== prefsSeq || view?.renderer !== renderer) return
     renderer.setAttribute('max-inline-size', `${WIDTHS[current.width].px}px`)
-    renderer.setStyles?.(bookCss(current, language, fontFaceCss(families)))
+    // 紙張「跟隨系統」時，書本內文改跟設定頁手動選的深淺色
+    const theme = bookTheme(current.theme, loadAppearance(localStorage))
+    renderer.setStyles?.(bookCss({ ...current, theme }, language, fontFaceCss(families)))
   }
 
   function changePrefs(next: ReadingPrefs) {
@@ -108,7 +114,36 @@
     prefsTimer = setTimeout(applyPrefs, 120)
   }
 
+  // 閱讀時間：最近 3 分鐘內有翻頁、點字才算在讀；切到背景時暫停。每累積一分鐘寫入一次
+  const IDLE_MS = 180_000
+  const TICK_MS = 15_000
+  const clock = createActivityClock({ idleMs: IDLE_MS, start: Date.now() })
+  let unsavedSeconds = 0
+  const markActive = () => clock.activity(Date.now())
+
+  function flushReading() {
+    unsavedSeconds += clock.tick(Date.now())
+    const seconds = unsavedSeconds
+    unsavedSeconds = 0
+    if (seconds > 0) addReadingTime(db, seconds).catch((err) => console.warn('記錄閱讀時間失敗', err))
+  }
+
+  function tickReading() {
+    unsavedSeconds += clock.tick(Date.now())
+    if (unsavedSeconds >= 60) flushReading()
+  }
+
+  function onVisibility() {
+    if (document.visibilityState === 'hidden') {
+      flushReading()
+      clock.pause(Date.now())
+    } else {
+      clock.resume(Date.now())
+    }
+  }
+
   async function onBookClick(doc: Document, e: MouseEvent) {
+    markActive()
     // 設定面板開著時，點書本只是關掉面板
     if (showPrefs) {
       showPrefs = false
@@ -123,6 +158,33 @@
       closeCard()
       return
     }
+    await lookupTarget(doc, tapped)
+  }
+
+  // 拖曳選取幾個字後，畫面上方出現「查詢」按鈕；等選取停下來才顯示，調整選取範圍時不閃動
+  let selected = $state<{ doc: Document; phrase: SelectedPhrase } | null>(null)
+  let selectionTimer: ReturnType<typeof setTimeout> | undefined
+  function onSelectionChange(doc: Document) {
+    markActive()
+    clearTimeout(selectionTimer)
+    selectionTimer = setTimeout(() => {
+      const phrase = selectionToLookup(doc, language)
+      if (phrase) selected = { doc, phrase }
+      else if (selected?.doc === doc) selected = null
+    }, 400)
+  }
+
+  async function lookupSelection() {
+    const target = selected
+    if (!target) return
+    selected = null
+    // 清掉系統的選取（iPad 的拷貝選單），改用查詢標示
+    target.doc.getSelection()?.removeAllRanges()
+    showPrefs = false
+    await lookupTarget(target.doc, target.phrase)
+  }
+
+  async function lookupTarget(doc: Document, tapped: SelectedPhrase) {
     if (highlightedDoc && highlightedDoc !== doc) setLookupHighlight(highlightedDoc, null)
     setLookupHighlight(doc, tapped.range)
     highlightedDoc = doc
@@ -224,6 +286,7 @@
   }
 
   const onKey = (e: KeyboardEvent) => {
+    markActive()
     // 在設定面板的滑桿上按方向鍵是調字級，不是翻頁
     const typing = (e.target as Element | null)?.closest?.('input, textarea, select')
     if (e.key === 'Escape' && showPrefs) showPrefs = false
@@ -234,6 +297,7 @@
   }
 
   const onRelocate = (e: Event) => {
+    markActive()
     const detail = (e as CustomEvent<RelocateDetail>).detail
     // 排版中途 foliate 可能算出 NaN（分頁數暫時為 0），略過這次
     if (!Number.isFinite(detail.fraction)) return
@@ -278,6 +342,7 @@
     watchForRedraw(doc)
     doc.addEventListener('keydown', onKey)
     doc.addEventListener('click', (ev) => onBookClick(doc, ev))
+    doc.addEventListener('selectionchange', () => onSelectionChange(doc))
     applyVocabHighlights(doc, vocabLevels, language)
   }
 
@@ -328,12 +393,18 @@
       }
     })()
     document.addEventListener('keydown', onKey)
+    document.addEventListener('visibilitychange', onVisibility)
+    const readingTimer = setInterval(tickReading, TICK_MS)
 
     return () => {
       cancelled = true
       clearTimeout(prefsTimer)
+      clearTimeout(selectionTimer)
       cancelLookup()
       document.removeEventListener('keydown', onKey)
+      document.removeEventListener('visibilitychange', onVisibility)
+      clearInterval(readingTimer)
+      flushReading()
       view?.close()
       view?.remove()
       view = null
@@ -359,6 +430,11 @@
     <div class="view-host" bind:this={container}></div>
     {#if loading}<p class="status">載入中…</p>{/if}
     {#if error}<p class="status error" role="alert">{error}</p>{/if}
+    {#if selected}
+      <button class="phrase primary" onclick={lookupSelection}>
+        查詢「{selected.phrase.word.length > 24 ? `${selected.phrase.word.slice(0, 24)}…` : selected.phrase.word}」
+      </button>
+    {/if}
     {#if card}<LookupCard {card} onClose={closeCard} {onOpenSettings} onToggleSave={toggleSave} />{/if}
   </div>
   {#if showPrefs}
@@ -391,6 +467,11 @@
   }
   footer { justify-content: space-between; }
   .title { font-family: var(--font-serif); }
+  .phrase {
+    /* 不用 transform 置中：按鈕按下時的縮放動畫也用 transform，會互相蓋掉 */
+    position: absolute; z-index: 12; top: 10px; left: 0; right: 0; margin: 0 auto; width: fit-content;
+    max-width: calc(100% - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .aa { font-family: var(--font-serif); font-size: 1.05rem; padding: 0.3rem 0.9rem; }
   .aa.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
   .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }

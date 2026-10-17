@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ImportSummary } from '../lib/backup/backup'
   import { db } from '../lib/db'
+  import { saveFile, isShareCancel } from '../lib/saveFile'
 
   let busy = $state<'export' | 'import' | null>(null)
   let message = $state('')
@@ -11,21 +12,8 @@
   const loadBackup = () => import('../lib/backup/backup')
 
   const today = () => new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD
-  // 平板、手機：用系統分享選單（可 AirDrop、存到「檔案」）；電腦：直接下載
-  const preferShare = (file: File) =>
-    matchMedia('(pointer: coarse)').matches && !!navigator.canShare?.({ files: [file] })
-
   const formatSize = (bytes: number) =>
     bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
-
-  function download(file: File) {
-    const url = URL.createObjectURL(file)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.name
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  }
 
   async function exportTo(includeBooks: boolean) {
     busy = 'export'
@@ -36,21 +24,11 @@
       const data = await exportBackup(db, { includeBooks })
       const name = `tapread-${includeBooks ? '完整' : '單字與進度'}-${today()}.zip`
       const file = new File([data as Uint8Array<ArrayBuffer>], name, { type: 'application/zip' })
-      if (preferShare(file)) {
-        try {
-          await navigator.share({ files: [file], title: 'TapRead 備份' })
-        } catch (e) {
-          // iOS：匯出太久會失去「使用者剛點過」的狀態，分享被拒；改直接下載
-          if (e instanceof DOMException && e.name === 'NotAllowedError') download(file)
-          else throw e
-        }
-      } else {
-        download(file)
-      }
+      await saveFile(file, 'TapRead 備份')
       message = `已匯出 ${name}（${formatSize(file.size)}）。`
     } catch (e) {
       // 使用者在分享選單按取消，不算錯誤
-      if (e instanceof DOMException && e.name === 'AbortError') return
+      if (isShareCancel(e)) return
       console.error('匯出失敗', e)
       error = '匯出失敗，請再試一次。'
     } finally {
@@ -125,6 +103,6 @@
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
   .muted { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: 0 0 8px; }
   .small { font-size: 0.8rem; margin-top: 8px; }
-  .ok { color: var(--accent); }
+  .ok { color: var(--accent-ink); }
   .error { color: var(--danger); }
 </style>

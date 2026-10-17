@@ -1,5 +1,6 @@
 // 備份的格式與合併規則（純函式）。跨裝置時同一本書在兩邊的 id 不同，以檔案內容的雜湊對應
 import type { BookFormat } from '../bookFile'
+import type { ReadingDay } from '../db'
 import { MAX_LEVEL, vocabId, type VocabEntry, type VocabExample } from '../vocab/model'
 
 export const BACKUP_APP = 'tapread'
@@ -38,6 +39,8 @@ export interface BackupManifest {
   exportedAt: number
   books: BackupBook[]
   vocab: VocabEntry[]
+  /** 每天的閱讀時間；舊版備份沒有 */
+  readingDays?: ReadingDay[]
 }
 
 export class BackupFormatError extends Error {
@@ -84,6 +87,20 @@ function sanitizeExample(raw: unknown): VocabExample | null {
     ...(typeof o.cfi === 'string' ? { cfi: str(o.cfi) } : {}),
   }
 }
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/
+const SECONDS_PER_DAY = 86_400
+
+export function sanitizeReadingDay(raw: unknown): ReadingDay | null {
+  const o = asObj(raw)
+  const seconds = int(o?.seconds)
+  if (!o || typeof o.date !== 'string' || !DATE.test(o.date) || seconds === null || seconds < 0 || seconds > SECONDS_PER_DAY) return null
+  return { date: o.date, seconds }
+}
+
+/** 同一天取較多的那一份：重複匯入同一個備份不會讓時間加倍 */
+export const mergeReadingDay = (local: ReadingDay | undefined, incoming: ReadingDay): ReadingDay | null =>
+  !local || incoming.seconds > local.seconds ? incoming : null
 
 /** 回傳整理過的單字；不合格回傳 null。id、字形、書號一律重新計算，不信任備份裡的值 */
 export function sanitizeVocabEntry(raw: unknown): VocabEntry | null {

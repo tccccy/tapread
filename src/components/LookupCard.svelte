@@ -92,7 +92,7 @@
   }
   .tools { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
   .save { min-height: 36px; padding: 4px 10px; font-size: 0.9rem; }
-  .save.saved { color: var(--accent); border-color: var(--accent); }
+  .save.saved { color: var(--accent-ink); border-color: var(--accent); }
   .close { border: none; background: transparent; min-height: 36px; padding: 4px 8px; color: var(--muted); }
   dl { margin: 8px 0 0; display: grid; gap: 4px; }
   dt { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
