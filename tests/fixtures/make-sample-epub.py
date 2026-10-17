@@ -54,3 +54,33 @@ with zipfile.ZipFile(OUT, 'w') as z:
     for n in (1, 2):
         z.writestr(f'OEBPS/c{n}.xhtml', chapter(n), compress_type=zipfile.ZIP_DEFLATED)
 print(OUT)
+
+
+# ---- 安全測試用：夾帶腳本的 EPUB（tests/fixtures/script-test.epub）----
+# 開啟後若 window.__pwned 被設值，代表 CSP 沒擋住書中腳本
+SCRIPT_OUT = pathlib.Path(__file__).with_name('script-test.epub')
+
+SCRIPT_CHAPTER = '''<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es">
+<head><title>Prueba</title><script src="evil.js"></script></head>
+<body>
+<h1>Prueba de seguridad</h1>
+<p>Este libro intenta ejecutar código.</p>
+<script>parent.__pwned = 'inline'; top.__pwned = 'inline';</script>
+<img src="no-existe.png" alt="" onerror="top.__pwned = 'handler'" />
+</body></html>'''
+
+SCRIPT_OPF = OPF.replace('La carta del abuelo', 'Libro con scripts').replace(
+    '<item id="c1" href="c1.xhtml" media-type="application/xhtml+xml"/>',
+    '<item id="c1" href="c1.xhtml" media-type="application/xhtml+xml" properties="scripted"/>'
+    '<item id="js" href="evil.js" media-type="application/javascript"/>',
+).replace('<item id="c2" href="c2.xhtml" media-type="application/xhtml+xml"/>', '').replace('<itemref idref="c2"/>', '')
+
+with zipfile.ZipFile(SCRIPT_OUT, 'w') as z:
+    z.writestr(zipfile.ZipInfo('mimetype'), 'application/epub+zip', compress_type=zipfile.ZIP_STORED)
+    z.writestr('META-INF/container.xml', CONTAINER, compress_type=zipfile.ZIP_DEFLATED)
+    z.writestr('OEBPS/content.opf', SCRIPT_OPF, compress_type=zipfile.ZIP_DEFLATED)
+    z.writestr('OEBPS/nav.xhtml', NAV.replace('<li><a href="c2.xhtml">Capítulo 2</a></li>', ''), compress_type=zipfile.ZIP_DEFLATED)
+    z.writestr('OEBPS/c1.xhtml', SCRIPT_CHAPTER, compress_type=zipfile.ZIP_DEFLATED)
+    z.writestr('OEBPS/evil.js', "top.__pwned = 'external';", compress_type=zipfile.ZIP_DEFLATED)
+print(SCRIPT_OUT)

@@ -5,7 +5,11 @@
   import { makeBook } from '../lib/foliate'
   import { normalizeMetadata } from '../lib/metadata'
 
-  let { onOpen }: { onOpen: (id: number) => void } = $props()
+  let { onOpen, onOpenSettings, onOpenVocab }: {
+    onOpen: (id: number) => void
+    onOpenSettings: () => void
+    onOpenVocab: () => void
+  } = $props()
 
   let books = $state<BookSummary[]>([])
   let error = $state('')
@@ -87,9 +91,13 @@
     <h1>我的書庫</h1>
     <!-- 不設 accept：iOS 對 .epub 的 accept 支援不一，改由 checkBookFile 驗證 -->
     <input bind:this={fileInput} type="file" hidden onchange={onPick} />
-    <button class="primary" disabled={busy} onclick={() => fileInput.click()}>
-      {busy ? '匯入中…' : '匯入 EPUB'}
-    </button>
+    <div class="actions">
+      <button onclick={onOpenVocab}>單字本</button>
+      <button onclick={onOpenSettings}>設定</button>
+      <button class="primary" disabled={busy} onclick={() => fileInput.click()}>
+        {busy ? '匯入中…' : '匯入 EPUB'}
+      </button>
+    </div>
   </header>
 
   {#if error}
@@ -128,6 +136,7 @@
   main.dragging { outline: 3px dashed var(--accent); outline-offset: -8px; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   h1 { font-size: 1.5rem; margin: 0.5rem 0; }
+  .actions { display: flex; gap: 8px; }
   .error { color: var(--danger); }
   .empty { text-align: center; padding: 15vh 0; }
   .muted { color: var(--muted); font-size: 0.9rem; }

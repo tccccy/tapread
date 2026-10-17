@@ -1,15 +1,6 @@
-import Dexie, { type EntityTable } from 'dexie'
+import { db as defaultDb, createDb, type BookSummary, type ReaderDb } from './db'
 
-export interface BookSummary {
-  id: number
-  title: string
-  author: string
-  language: string
-  addedAt: number
-  lastOpenedAt: number
-  lastCfi: string | null
-  progress: number
-}
+export type { BookSummary }
 
 export type StoredBook = BookSummary & { file: Blob }
 export type NewBook = Pick<StoredBook, 'title' | 'author' | 'language' | 'file'>
@@ -25,20 +16,8 @@ export interface Library {
   debugTableCounts(): Promise<{ books: number; files: number }>
 }
 
-// 檔案本體另存一表，列書目時不必把整本書讀進記憶體（iPad 上書多時很重要）
-interface StoredFile {
-  id: number
-  blob: Blob
-}
-
-type ReaderDb = Dexie & {
-  books: EntityTable<BookSummary, 'id'>
-  files: EntityTable<StoredFile, 'id'>
-}
-
-export function createLibrary(dbName = 'polyglot-reader'): Library {
-  const db = new Dexie(dbName) as ReaderDb
-  db.version(1).stores({ books: '++id, lastOpenedAt', files: 'id' })
+export function createLibrary(dbOrName: ReaderDb | string = defaultDb): Library {
+  const db = typeof dbOrName === 'string' ? createDb(dbOrName) : dbOrName
 
   // 同一毫秒內連續操作時仍保持先後順序
   let lastStamp = 0
