@@ -52,5 +52,5 @@ export function applyVocabHighlights(doc: Document, levels: Map<string, number>,
 
 // 越不熟顏色越深
 export const VOCAB_HIGHLIGHT_CSS = LEVELS.map(
-  (l) => `::highlight(${name(l)}) { background-color: rgba(120, 170, 220, ${(0.5 - (l - 1) * 0.11).toFixed(2)}); }`,
+  (l) => `::highlight(${name(l)}) { background-color: rgba(190, 132, 82, ${(0.45 - (l - 1) * 0.1).toFixed(2)}); }`,
 ).join('\n')

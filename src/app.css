@@ -1,45 +1,132 @@
+/* TapRead 設計基礎：米白底、咖啡色按鈕、霧面玻璃；深色模式為深咖啡玻璃（跟隨系統） */
 :root {
-  --bg: #f7f5f0;
-  --surface: #ffffff;
-  --text: #22261f;
-  --muted: #6b6f66;
-  --border: #ddd8cc;
-  --accent: #2f5d50;
-  --accent-text: #ffffff;
-  --danger: #a33a2c;
-  --radius: 10px;
+  --bg: #f4eee5;
+  --bg-glow-1: rgba(214, 180, 140, 0.45);
+  --bg-glow-2: rgba(255, 250, 242, 0.9);
+  /* 玻璃卡片：半透明＋背景模糊 */
+  --surface: rgba(255, 252, 247, 0.62);
+  --surface-strong: rgba(255, 252, 247, 0.86);
+  --surface-solid: #fbf8f3;
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 10px 34px rgba(92, 62, 38, 0.12), 0 1px 2px rgba(92, 62, 38, 0.06);
+  --glass-blur: blur(18px) saturate(140%);
+  --text: #3a2a20;
+  --muted: #8a7563;
+  --border: rgba(120, 88, 60, 0.18);
+  --accent: #8a5a3b;
+  --accent-strong: #6f452b;
+  --accent-text: #fff8ef;
+  --accent-soft: rgba(138, 90, 59, 0.12);
+  --danger: #a8432f;
+  --star: #c48a3a;
+  /* 書架層板 */
+  --shelf-top: #e8d9c3;
+  --shelf-front: #d4bd9c;
+  --shelf-shadow: rgba(92, 62, 38, 0.22);
+  /* 閱讀頁紙張 */
+  --paper: #fbf7f0;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --font-serif: ui-serif, 'New York', 'Songti TC', 'Noto Serif TC', 'Iowan Old Style', Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Noto Sans TC', 'Segoe UI', sans-serif;
+  /* 底部分頁列高度（內容要留白） */
+  --tabbar-space: calc(88px + env(safe-area-inset-bottom));
   color-scheme: light;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1d1a;
-    --surface: #252823;
-    --text: #e6e4dd;
-    --muted: #9a9d93;
-    --border: #3a3e37;
-    --accent: #8ec5b4;
-    --accent-text: #10201b;
+    --bg: #19120e;
+    --bg-glow-1: rgba(138, 90, 59, 0.35);
+    --bg-glow-2: rgba(60, 40, 28, 0.6);
+    --surface: rgba(52, 38, 29, 0.58);
+    --surface-strong: rgba(58, 42, 32, 0.86);
+    --surface-solid: #2a1f18;
+    --glass-border: rgba(255, 232, 205, 0.1);
+    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+    --text: #f1e6d8;
+    --muted: #b49c86;
+    --border: rgba(255, 228, 198, 0.13);
+    --accent: #c08b5c;
+    --accent-strong: #d29d6c;
+    --accent-text: #1c140f;
+    --accent-soft: rgba(192, 139, 92, 0.16);
     --danger: #e58a7c;
+    --star: #e0a85a;
+    --shelf-top: #4a372a;
+    --shelf-front: #36281f;
+    --shelf-shadow: rgba(0, 0, 0, 0.5);
+    --paper: #1f1813;
     color-scheme: dark;
   }
 }
+
 * { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Noto Sans TC', 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   -webkit-text-size-adjust: 100%;
 }
+
+/* 背景柔光：玻璃要有東西在後面才看得出透明感 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60vmax 50vmax at 10% -10%, var(--bg-glow-2), transparent 60%),
+    radial-gradient(55vmax 45vmax at 110% 20%, var(--bg-glow-1), transparent 65%),
+    radial-gradient(50vmax 40vmax at 30% 120%, var(--bg-glow-1), transparent 60%);
+}
+
+h1, h2, h3 { font-family: var(--font-serif); font-weight: 600; letter-spacing: 0.01em; }
+
+/* 玻璃卡片 */
+.glass {
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+}
+
+/* 一般按鈕不加背景模糊（iPad 上大量模糊層很耗效能），只有 .glass 卡片與分頁列才模糊 */
 button {
   font: inherit;
   color: inherit;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.9rem;
+  background: var(--surface-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 0.5rem 1.05rem;
   cursor: pointer;
   min-height: 44px;
+  transition: background 0.15s, transform 0.1s;
 }
-button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button:active:not(:disabled) { transform: scale(0.98); }
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(138, 90, 59, 0.28);
+}
+button.primary:hover:not(:disabled) { background: var(--accent-strong); }
 button:disabled { opacity: 0.5; cursor: default; }
+
+input, select, textarea {
+  font: inherit;
+  font-size: 16px; /* 16px 以上 iOS 才不會自動放大 */
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

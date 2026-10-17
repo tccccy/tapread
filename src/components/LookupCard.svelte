@@ -70,11 +70,13 @@
     width: min(640px, calc(100% - 24px));
     max-height: 45%;
     overflow-y: auto;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-    padding: 12px 16px 16px;
+    background: var(--surface-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glass-shadow);
+    padding: 14px 18px 18px;
     z-index: 10;
   }
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

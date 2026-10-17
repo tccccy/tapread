@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeVocabEntry, mergeProgress, parseManifest, sanitizeVocabEntry, sanitizeBook, BackupFormatError, MISSING_BOOK_ID } from '../src/lib/backup/merge'
+import { mergeVocabEntry, mergeProgress, mergeBookMeta, parseManifest, sanitizeVocabEntry, sanitizeBook, BackupFormatError, MISSING_BOOK_ID } from '../src/lib/backup/merge'
 import type { VocabEntry, VocabExample } from '../src/lib/vocab/model'
 
 const ex = (over: Partial<VocabExample> = {}): VocabExample => ({
@@ -128,5 +128,36 @@ describe('sanitizeBook', () => {
 
   it('閱讀位置不是字串時清空', () => {
     expect(sanitizeBook({ ...book, lastCfi: 42 })?.lastCfi).toBeNull()
+  })
+})
+
+describe('mergeBookMeta（評分、評語、日期）', () => {
+  it('評分與評語採用較晚修改的一邊', () => {
+    const local = { rating: 3, review: '舊', reviewUpdatedAt: 100 }
+    expect(mergeBookMeta(local, { rating: 4.5, review: '新', reviewUpdatedAt: 200 })).toEqual({ rating: 4.5, review: '新', reviewUpdatedAt: 200 })
+    expect(mergeBookMeta(local, { rating: 1, review: '更舊', reviewUpdatedAt: 50 })).toBeNull()
+  })
+
+  it('開始日期取較早、讀完日期本機沒有才補上', () => {
+    expect(mergeBookMeta({ startedAt: 300 }, { startedAt: 100, finishedAt: 500 })).toEqual({ startedAt: 100, finishedAt: 500 })
+    expect(mergeBookMeta({ startedAt: 100, finishedAt: 400 }, { startedAt: 300, finishedAt: 500 })).toBeNull()
+  })
+})
+
+describe('sanitizeBook 新欄位', () => {
+  const base = {
+    id: 3, hash: 'a'.repeat(64), title: 'T', author: '', language: 'es', format: 'epub', fileName: 'T.epub',
+    lastCfi: null, progress: 0.5, addedAt: 1, lastOpenedAt: 2,
+  }
+  it('保留合法的評分、評語、日期、書架名稱', () => {
+    const b = sanitizeBook({ ...base, rating: 3.5, review: '好', reviewUpdatedAt: 5, startedAt: 1, finishedAt: 9, shelves: ['小說', '工作'] })
+    expect(b).toMatchObject({ rating: 3.5, review: '好', reviewUpdatedAt: 5, startedAt: 1, finishedAt: 9, shelves: ['小說', '工作'] })
+  })
+  it('不合法的值丟掉', () => {
+    const b = sanitizeBook({ ...base, rating: 'x', review: 5, finishedAt: 'y', shelves: ['ok', 3, ''] })
+    expect(b).not.toHaveProperty('rating')
+    expect(b).not.toHaveProperty('review')
+    expect(b).not.toHaveProperty('finishedAt')
+    expect(b?.shelves).toEqual(['ok'])
   })
 })

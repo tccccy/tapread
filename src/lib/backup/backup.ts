@@ -5,7 +5,7 @@ import type { ReaderDb } from '../db'
 import { DEFAULT_MAX_BOOK_BYTES } from '../bookFile'
 import type { VocabEntry } from '../vocab/model'
 import {
-  BACKUP_APP, BACKUP_VERSION, BackupFormatError, mergeProgress, mergeVocabEntry, parseManifest,
+  BACKUP_APP, BACKUP_VERSION, BackupFormatError, mergeBookMeta, mergeProgress, mergeVocabEntry, parseManifest,
   sanitizeBook, sanitizeVocabEntry, type BackupBook, type BackupManifest,
 } from './merge'
 
@@ -34,6 +34,7 @@ async function bookHashes(db: ReaderDb): Promise<Map<number, string>> {
 
 export async function exportBackup(db: ReaderDb, { includeBooks }: { includeBooks: boolean }): Promise<Uint8Array> {
   const hashes = await bookHashes(db)
+  const shelfNames = new Map((await db.shelves.toArray()).map((s) => [s.id, s.name]))
   const zip: Zippable = {}
   const books: BackupBook[] = []
   for (const book of await db.books.toArray()) {
@@ -44,6 +45,8 @@ export async function exportBackup(db: ReaderDb, { includeBooks }: { includeBook
       id: book.id, hash, title: book.title, author: book.author, language: book.language, format,
       fileName: `${book.title}.${format}`, lastCfi: book.lastCfi, progress: book.progress,
       addedAt: book.addedAt, lastOpenedAt: book.lastOpenedAt,
+      ...pick(book, ['rating', 'review', 'reviewUpdatedAt', 'startedAt', 'finishedAt']),
+      shelves: (book.shelfIds ?? []).map((id) => shelfNames.get(id)).filter((n): n is string => !!n),
     }
     if (includeBooks) {
       const file = await db.files.get(book.id)
@@ -80,6 +83,23 @@ const MIME: Record<string, string> = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
 
+const pick = <T extends object, K extends keyof T>(obj: T, keys: K[]): Partial<Pick<T, K>> =>
+  Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k]])) as Partial<Pick<T, K>>
+
+/** 備份中的書架名稱 → 本機書架 id；本機沒有的書架自動建立（名稱不分大小寫比對） */
+async function resolveShelves(db: ReaderDb, names: string[]): Promise<Map<string, string>> {
+  const out = new Map((await db.shelves.toArray()).map((s) => [s.name.toLocaleLowerCase(), s.id]))
+  let order = ((await db.shelves.orderBy('order').last())?.order ?? -1) + 1
+  for (const name of names) {
+    const key = name.toLocaleLowerCase()
+    if (out.has(key)) continue
+    const id = crypto.randomUUID()
+    await db.shelves.add({ id, name, order: order++, createdAt: Date.now() })
+    out.set(key, id)
+  }
+  return out
+}
+
 /** 只解壓指定的一個檔案（並限制大小），避免一次把整個備份展開在記憶體裡 */
 function extractOne(data: Uint8Array, path: string, maxBytes: number): Uint8Array | undefined {
   const out = unzipSync(data, { filter: (f) => f.name === path && f.originalSize <= maxBytes })
@@ -104,14 +124,15 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
   const localByHash = new Map([...(await bookHashes(db))].map(([id, hash]) => [hash, id]))
   // 備份中的書號 → 本機書號
   const bookIdMap = new Map<number, number>()
-  const progressUpdates: { localId: number; book: BackupBook }[] = []
+  // 本機原本就有的書（要合併進度與評分；新加入的書直接沿用備份的值）
+  const existingIds = new Set<number>()
 
   // 新書逐本解壓、驗證、存入，處理完就釋放記憶體（iPad 上書多時很重要）
   for (const b of books) {
     const localId = localByHash.get(b.hash)
     if (localId !== undefined) {
       bookIdMap.set(b.id, localId)
-      progressUpdates.push({ localId, book: b })
+      existingIds.add(localId)
       continue
     }
     const bytes = b.file ? extractOne(data, b.file, DEFAULT_MAX_BOOK_BYTES) : undefined
@@ -129,6 +150,7 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
       const newId = (await db.books.add({
         title: b.title, author: b.author, language: b.language, format: b.format, hash: b.hash,
         addedAt: b.addedAt, lastOpenedAt: b.lastOpenedAt, lastCfi: b.lastCfi, progress: b.progress,
+        ...pick(b, ['rating', 'review', 'reviewUpdatedAt', 'startedAt', 'finishedAt']),
       })) as number
       await db.files.add({ id: newId, blob: file })
       return newId
@@ -138,14 +160,24 @@ export async function importBackup(db: ReaderDb, data: Uint8Array): Promise<Impo
     summary.booksAdded++
   }
 
-  return db.transaction('rw', db.books, db.vocab, async () => {
-    for (const { localId, book } of progressUpdates) {
+  return db.transaction('rw', db.books, db.vocab, db.shelves, async () => {
+    // 只替真的有對應到本機的書建立書架，略過的書不會留下空書架
+    const mapped = books.filter((b) => bookIdMap.has(b.id))
+    const shelfIdOf = await resolveShelves(db, mapped.flatMap((b) => b.shelves ?? []))
+    const shelfIdsFor = (b: BackupBook) =>
+      (b.shelves ?? []).map((n) => shelfIdOf.get(n.toLocaleLowerCase())).filter((id): id is string => !!id)
+
+    for (const b of mapped) {
+      const localId = bookIdMap.get(b.id)!
       const local = await db.books.get(localId)
-      const patch = local && mergeProgress(local, book)
-      if (patch) {
-        await db.books.update(localId, patch)
-        summary.booksUpdated++
-      }
+      if (!local) continue
+      const isExisting = existingIds.has(localId)
+      const progress = isExisting ? mergeProgress(local, b) : null
+      const meta = isExisting ? mergeBookMeta(local, b) : null
+      const shelfIds = [...new Set([...(local.shelfIds ?? []), ...shelfIdsFor(b)])]
+      await db.books.update(localId, { ...progress, ...meta, shelfIds })
+      // 摘要只計算使用者會在意的變化：閱讀進度、評分評語
+      if (progress || meta?.reviewUpdatedAt) summary.booksUpdated++
     }
     for (const incoming of vocab) {
       const local = await db.vocab.get(incoming.id)

@@ -15,10 +15,12 @@
   import type { Definition } from '../lib/ai/definition'
   import LookupCard, { type CardState } from './LookupCard.svelte'
 
-  let { bookId, jumpTo, onClose, onOpenSettings }: {
+  let { bookId, jumpTo, backLabel = '書架', onClose, onOpenSettings }: {
     bookId: number
     /** 從單字本「回到書中」開啟：跳到該句、不改變閱讀進度 */
     jumpTo?: string
+    /** 返回鍵上顯示要回到哪裡 */
+    backLabel?: string
     onClose: () => void
     onOpenSettings: () => void
   } = $props()
@@ -301,7 +303,7 @@
 
 <div class="reader">
   <header>
-    <button onclick={onClose} aria-label={peek ? '回單字本' : '回書庫'}>{peek ? '← 單字本' : '← 書庫'}</button>
+    <button onclick={onClose} aria-label={`回${backLabel}`}>← {backLabel}</button>
     <div class="heading">
       <span class="title">{title}</span>
       {#if chapter}<span class="chapter">{chapter}</span>{/if}
@@ -325,19 +327,22 @@
 
 <style>
   .reader {
-    height: 100%;
+    /* 直接用視窗高度（外層容器沒有固定高度）；dvh 會扣掉手機瀏覽器的網址列 */
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    background: var(--paper);
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   header, footer {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
   }
-  footer { border-bottom: none; border-top: 1px solid var(--border); justify-content: space-between; }
+  footer { justify-content: space-between; }
+  .title { font-family: var(--font-serif); }
   .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .title, .chapter { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .title { font-weight: 600; }
@@ -347,5 +352,5 @@
   .view-host :global(foliate-view) { display: block; width: 100%; height: 100%; }
   .status { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--muted); }
   .error { color: var(--danger); }
-  .peek-note { margin: 0; padding: 6px 16px; font-size: 0.85rem; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); }
+  .peek-note { margin: 0 16px 6px; padding: 6px 14px; font-size: 0.85rem; color: var(--muted); background: var(--accent-soft); border-radius: 999px; }
 </style>

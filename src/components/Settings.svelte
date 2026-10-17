@@ -12,7 +12,8 @@
     model: '金鑰沒問題，但找不到這個模型名稱。清空「模型」欄位會改回預設值。',
   }
 
-  let { onBack }: { onBack: () => void } = $props()
+  /** 從閱讀頁進來時才有返回鍵；從分頁列進來就不需要 */
+  let { onBack }: { onBack?: () => void } = $props()
 
   const initial = loadSettings(localStorage)
   let apiKey = $state(initial.geminiApiKey)
@@ -69,7 +70,7 @@
 
 <main>
   <header>
-    <button onclick={onBack}>← 書庫</button>
+    {#if onBack}<button onclick={onBack}>← 返回閱讀</button>{/if}
     <h1>設定</h1>
   </header>
 

@@ -6,6 +6,7 @@ import { createVocabStore } from '../src/lib/vocab/store'
 import { exportBackup, importBackup } from '../src/lib/backup/backup'
 import { zipSync, strToU8 } from 'fflate'
 import { BackupFormatError, MISSING_BOOK_ID } from '../src/lib/backup/merge'
+import { createShelfStore } from '../src/lib/books/shelves'
 
 let n = 0
 const device = () => {
@@ -107,6 +108,32 @@ describe('備份與還原', () => {
     expect(summary.booksSkipped).toBe(1)
     expect(await b.lib.listBooks()).toHaveLength(0)
     expect((await b.vocab.get('es|casa'))?.examples[0].bookId).toBe(MISSING_BOOK_ID)
+  })
+
+  it('評分、評語、讀完日期與自訂書架（依名稱對應）一起搬過去', async () => {
+    const { a, bookId } = await seed()
+    const shelfA = await createShelfStore(a.db).create('小說')
+    await a.lib.updateBook(bookId, { rating: 4.5, review: '很棒', finished: true, shelfIds: [shelfA.id] })
+
+    const b = device()
+    const shelfB = await createShelfStore(b.db).create('小說')
+    await importBackup(b.db, await exportBackup(a.db, { includeBooks: true }))
+
+    const [book] = await b.lib.listBooks()
+    expect(book).toMatchObject({ rating: 4.5, review: '很棒', shelfIds: [shelfB.id] })
+    expect(book.finishedAt).toBeGreaterThan(0)
+    expect((await createShelfStore(b.db).list()).map((s) => s.name)).toEqual(['小說'])
+  })
+
+  it('本機沒有的書架會自動建立', async () => {
+    const { a, bookId } = await seed()
+    const s = await createShelfStore(a.db).create('西文小說')
+    await a.lib.updateBook(bookId, { shelfIds: [s.id] })
+    const b = device()
+    await importBackup(b.db, await exportBackup(a.db, { includeBooks: true }))
+    const shelves = await createShelfStore(b.db).list()
+    expect(shelves.map((x) => x.name)).toEqual(['西文小說'])
+    expect((await b.lib.listBooks())[0].shelfIds).toEqual([shelves[0].id])
   })
 
   it('不是 zip 或不是 TapRead 備份時丟 BackupFormatError', async () => {

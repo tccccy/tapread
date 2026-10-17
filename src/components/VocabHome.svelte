@@ -16,9 +16,8 @@
   import VocabList from './VocabList.svelte'
   import VocabFilterPanel from './VocabFilterPanel.svelte'
 
-  let { initialPlace, onBack, onReview, onJump }: {
+  let { initialPlace, onReview, onJump }: {
     initialPlace?: VocabPlace
-    onBack: () => void
     /** ids：依篩選與模式決定的複習卡片 */
     onReview: (place: VocabPlace, ids: string[]) => void
     onJump: (bookId: number, cfi: string, place: VocabPlace) => void
@@ -98,7 +97,6 @@
 
 <main>
   <header>
-    <button onclick={onBack}>← 書庫</button>
     <h1>單字本</h1>
   </header>
 

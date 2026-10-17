@@ -13,6 +13,8 @@ export interface VocabStore {
   list(language: string, bookId?: number): Promise<VocabEntry[]>
   review(id: string, grade: ReviewGrade, now?: number): Promise<VocabEntry>
   formLevels(language: string): Promise<Map<string, number>>
+  /** 從某本書收藏了幾個字 */
+  countByBook(bookId: number): Promise<number>
   /** 書改了語言後，把它在舊語言下收藏的例句搬到新語言（與既有的字合併） */
   moveBookLanguage(bookId: number, from: string, to: string): Promise<void>
 }
@@ -69,6 +71,8 @@ export function createVocabStore(db: ReaderDb): VocabStore {
         await db.vocab.put(next)
         return next
       }),
+
+    countByBook: (bookId) => db.vocab.filter((e) => e.bookIds.includes(bookId)).count(),
 
     async formLevels(language) {
       return formLevelMap(await db.vocab.where('language').equals(language).toArray())

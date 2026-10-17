@@ -23,6 +23,13 @@ export interface BackupBook {
   lastOpenedAt: number
   /** 書檔在 zip 中的路徑；只匯出單字與進度時沒有 */
   file?: string
+  rating?: number
+  review?: string
+  reviewUpdatedAt?: number
+  startedAt?: number
+  finishedAt?: number
+  /** 所在自訂書架的名稱（不同裝置書架 id 不同，以名稱對應） */
+  shelves?: string[]
 }
 
 export interface BackupManifest {
@@ -112,12 +119,26 @@ export function sanitizeBook(raw: unknown): BackupBook | null {
   if (!BOOK_FORMATS.includes(format) || !str(o.title).trim()) return null
   if (progress === null || progress < 0 || progress > 1 || addedAt === null || lastOpenedAt === null) return null
   const file = typeof o.file === 'string' && BOOK_FILE_PATH.test(o.file) ? o.file : undefined
+  const rating = num(o.rating)
+  const optionalNum = (k: string) => {
+    const v = num(o[k])
+    return v === null ? {} : { [k]: v }
+  }
+  const shelves = Array.isArray(o.shelves)
+    ? [...new Set(o.shelves.filter((s): s is string => typeof s === 'string' && s.trim() !== '').map((s) => s.trim().slice(0, 40)))]
+    : []
   return {
     id, hash: o.hash, title: str(o.title), author: str(o.author), language: str(o.language).slice(0, 8), format,
     fileName: str(o.fileName) || `${str(o.title)}.${format}`,
     lastCfi: typeof o.lastCfi === 'string' ? str(o.lastCfi) : null,
     progress, addedAt, lastOpenedAt,
     ...(file ? { file } : {}),
+    ...(rating !== null && rating >= 0.5 && rating <= 5 ? { rating: Math.round(rating * 2) / 2 } : {}),
+    ...(typeof o.review === 'string' ? { review: o.review.slice(0, 5000) } : {}),
+    ...optionalNum('reviewUpdatedAt'),
+    ...optionalNum('startedAt'),
+    ...optionalNum('finishedAt'),
+    ...(shelves.length > 0 ? { shelves } : {}),
   }
 }
 
@@ -153,4 +174,19 @@ type Progress = { lastCfi: string | null; progress: number; lastOpenedAt: number
 export function mergeProgress(local: Progress, incoming: Progress): Progress | null {
   if (!incoming.lastCfi || incoming.lastOpenedAt <= local.lastOpenedAt) return null
   return { lastCfi: incoming.lastCfi, progress: incoming.progress, lastOpenedAt: incoming.lastOpenedAt }
+}
+
+type BookMeta = Pick<BackupBook, 'rating' | 'review' | 'reviewUpdatedAt' | 'startedAt' | 'finishedAt'>
+
+/** 合併評分、評語與日期：評分評語採較晚修改的一邊；開始日期取較早；讀完日期本機沒有才補。回傳要更新的欄位或 null */
+export function mergeBookMeta(local: BookMeta, incoming: BookMeta): BookMeta | null {
+  const patch: BookMeta = {}
+  if ((incoming.reviewUpdatedAt ?? 0) > (local.reviewUpdatedAt ?? 0)) {
+    patch.rating = incoming.rating
+    patch.review = incoming.review
+    patch.reviewUpdatedAt = incoming.reviewUpdatedAt
+  }
+  if (incoming.startedAt && (!local.startedAt || incoming.startedAt < local.startedAt)) patch.startedAt = incoming.startedAt
+  if (incoming.finishedAt && !local.finishedAt) patch.finishedAt = incoming.finishedAt
+  return Object.keys(patch).length > 0 ? patch : null
 }
