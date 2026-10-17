@@ -9,5 +9,5 @@
 <span class="sentence">{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</span>
 
 <style>
-  mark { color: inherit; background: rgba(190, 132, 82, 0.28); border-radius: 4px; padding: 0 2px; font-weight: 700; }
+  mark { color: inherit; background: rgba(180, 146, 116, 0.28); border-radius: 4px; padding: 0 2px; font-weight: 700; }
 </style>

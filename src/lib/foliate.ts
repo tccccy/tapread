@@ -37,19 +37,6 @@ export const makeBook = (file: File | Blob) => rawMakeBook(file) as Promise<Foli
 
 export const createFoliateView = () => document.createElement('foliate-view') as FoliateView
 
-// 可重排版的書（EPUB、Word）注入 iframe 的排版樣式
-// 米白紙張＋深咖啡字；深色模式為深咖啡底＋暖米色字（與 app.css 的 --paper 一致）
-export const BOOK_CSS = `
-  html { color-scheme: light dark; background: #fbf7f0; color: #3a2a20; }
-  body { font-family: ui-serif, 'New York', 'Songti TC', 'Noto Serif TC', Georgia, serif; }
-  p, li, blockquote, dd { line-height: 1.7; text-align: start; hyphens: auto; }
-  a:link { color: #8a5a3b; }
-  @media (prefers-color-scheme: dark) {
-    html { background: #1f1813; color: #eadfd1; }
-    a:link { color: #d29d6c; }
-  }
-`
-
 const HIGHLIGHT_STYLE_ID = 'polyglot-reader-highlights'
 
 /** 單字上色與查詢標示的樣式；每一頁都要有，PDF 的固定版面沒有 setStyles 可用，所以直接插入 */

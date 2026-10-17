@@ -42,7 +42,7 @@ const cspMeta = (): Plugin => {
   }
 }
 
-// foliate-js 的 pdf.js 需要兩處建置時修補（不改 vendor 原始檔，升級時才不會被覆蓋）：
+// foliate-js 的 pdf.js 需要建置時修補（不改 vendor 原始檔，升級時才不會被覆蓋）：
 // 1. 以 new URL(`vendor/pdfjs/${path}`, import.meta.url) 載入 worker、字型與 cmap；Vite 會把這種樣板字串
 //    改寫成 import.meta.glob，打包後在瀏覽器裡無法執行 → 改成字串相加讓 Vite 不處理，再把資料夾複製過去。
 // 2. 頁面重新繪製（例如視窗大小改變）時沒有清空文字層，同一頁的文字會重複疊兩份，點字時會取錯句子。
@@ -61,16 +61,45 @@ const PDFJS_PATCHES: [original: string, patched: string][] = [
   ],
 ]
 
-const patchFoliatePdf = (): Plugin => ({
-  name: 'patch-foliate-pdf',
+// paginator.js：套用樣式後會等一個畫格／等字型載完再重排；若這期間離開閱讀頁，view 已關閉會丟錯
+const PAGINATOR_PATCHES: [original: string, patched: string][] = [
+  [
+    'this.#background.style.background = getBackground(this.#view.document))',
+    'this.#view && (this.#background.style.background = getBackground(this.#view.document)))',
+  ],
+  [
+    'this.#view?.document?.fonts?.ready?.then(() => this.#view.expand())',
+    'this.#view?.document?.fonts?.ready?.then(() => this.#view?.expand())',
+  ],
+]
+
+const FOLIATE_PATCHES: Record<string, [original: string, patched: string][]> = {
+  'vendor/foliate-js/pdf.js': PDFJS_PATCHES,
+  'vendor/foliate-js/paginator.js': PAGINATOR_PATCHES,
+}
+
+const patchFoliate = (): Plugin => ({
+  name: 'patch-foliate',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('vendor/foliate-js/pdf.js')) return null
-    return PDFJS_PATCHES.reduce((out, [original, patched]) => {
+    const file = Object.keys(FOLIATE_PATCHES).find((f) => id.split('?')[0].endsWith(f))
+    if (!file) return null
+    return FOLIATE_PATCHES[file].reduce((out, [original, patched]) => {
       // 升級 foliate-js 後若程式碼改了，直接讓建置失敗，避免默默壞掉
-      if (!out.includes(original)) throw new Error(`foliate-js pdf.js 已改變，找不到：${original}；請更新 vite.config.ts`)
+      if (!out.includes(original)) throw new Error(`foliate-js ${file} 已改變，找不到：${original}；請更新 vite.config.ts`)
       return out.replace(original, patched)
     }, code)
+  },
+})
+
+// @fontsource 的字型同時附 woff2 與舊格式 woff；支援的瀏覽器都吃 woff2，拿掉 woff 讓部署檔案少一半
+const WOFF_FALLBACK = /,\s*url\([^)]+\.woff\) format\('woff'\)/g
+const woff2Only = (): Plugin => ({
+  name: 'fontsource-woff2-only',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.includes('@fontsource/') || !id.split('?')[0].endsWith('.css')) return null
+    return code.replace(WOFF_FALLBACK, '')
   },
 })
 
@@ -105,7 +134,8 @@ export default defineConfig({
   base: './',
   plugins: [
     cspMeta(),
-    patchFoliatePdf(),
+    patchFoliate(),
+    woff2Only(),
     servePdfjsCssRaw(),
     copyPdfjsAssets(),
     svelte(),
@@ -118,8 +148,8 @@ export default defineConfig({
         short_name: 'TapRead',
         description: '讀外文書時點詞即得上下文釋義，書檔只存在你的裝置',
         lang: 'zh-Hant-TW',
-        theme_color: '#2f5d50',
-        background_color: '#f7f5f0',
+        theme_color: '#f4eee5',
+        background_color: '#f4eee5',
         display: 'standalone',
         start_url: './',
         icons: [
@@ -129,9 +159,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png}'],
         // foliate-js 的 PDF.js 很大，P4 之前不預先快取
         globIgnores: ['**/pdf*.js', '**/pdfjs/**'],
+        // 字型切片很多（中文字型數百個），不預先下載；讀到哪些字才抓哪些，抓過就留在快取供離線使用
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'font',
+            handler: 'CacheFirst',
+            options: { cacheName: 'tapread-fonts', expiration: { maxEntries: 800 } },
+          },
+        ],
       },
     }),
   ],

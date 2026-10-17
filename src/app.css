@@ -1,5 +1,6 @@
-/* TapRead 設計基礎：米白底、咖啡色按鈕、霧面玻璃；深色模式為深咖啡玻璃（跟隨系統） */
-:root {
+/* TapRead 設計基礎：米白底、咖啡色按鈕、霧面玻璃；深色模式為深咖啡玻璃（跟隨系統）
+   閱讀頁可在「Aa」指定紙張色：data-reading-theme 會覆蓋這裡的色彩（米白／羊皮紙用淺色組、夜間用深色組） */
+:root, [data-reading-theme='paper'], [data-reading-theme='sepia'] {
   --bg: #f4eee5;
   --bg-glow-1: rgba(214, 180, 140, 0.45);
   --bg-glow-2: rgba(255, 250, 242, 0.9);
@@ -27,7 +28,8 @@
   --paper: #fbf7f0;
   --radius: 14px;
   --radius-lg: 22px;
-  --font-serif: ui-serif, 'New York', 'Songti TC', 'Noto Serif TC', 'Iowan Old Style', Georgia, serif;
+  /* 標題用打包的網頁字型（Literata＋思源宋體），各平台看起來一致 */
+  --font-serif: 'Literata', 'Noto Serif TC', ui-serif, 'Songti TC', Georgia, serif;
   --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Noto Sans TC', 'Segoe UI', sans-serif;
   /* 底部分頁列高度（內容要留白） */
   --tabbar-space: calc(88px + env(safe-area-inset-bottom));
@@ -47,18 +49,46 @@
     --text: #f1e6d8;
     --muted: #b49c86;
     --border: rgba(255, 228, 198, 0.13);
-    --accent: #c08b5c;
-    --accent-strong: #d29d6c;
+    --accent: #c4a88c;
+    --accent-strong: #d3baa0;
     --accent-text: #1c140f;
-    --accent-soft: rgba(192, 139, 92, 0.16);
+    --accent-soft: rgba(196, 168, 140, 0.16);
     --danger: #e58a7c;
-    --star: #e0a85a;
+    --star: #d8b98f;
     --shelf-top: #4a372a;
     --shelf-front: #36281f;
     --shelf-shadow: rgba(0, 0, 0, 0.5);
     --paper: #1f1813;
     color-scheme: dark;
   }
+}
+
+[data-reading-theme='sepia'] { --paper: #f1e5cf; }
+
+/* 夜間紙張：與系統深色模式同一組顏色 */
+[data-reading-theme='night'] {
+  --bg: #19120e;
+  --bg-glow-1: rgba(138, 90, 59, 0.35);
+  --bg-glow-2: rgba(60, 40, 28, 0.6);
+  --surface: rgba(52, 38, 29, 0.58);
+  --surface-strong: rgba(58, 42, 32, 0.86);
+  --surface-solid: #2a1f18;
+  --glass-border: rgba(255, 232, 205, 0.1);
+  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  --text: #f1e6d8;
+  --muted: #b49c86;
+  --border: rgba(255, 228, 198, 0.13);
+  --accent: #c4a88c;
+  --accent-strong: #d3baa0;
+  --accent-text: #1c140f;
+  --accent-soft: rgba(196, 168, 140, 0.16);
+  --danger: #e58a7c;
+  --star: #d8b98f;
+  --shelf-top: #4a372a;
+  --shelf-front: #36281f;
+  --shelf-shadow: rgba(0, 0, 0, 0.5);
+  --paper: #1f1813;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

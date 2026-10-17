@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { library } from '../lib/library'
-  import { createFoliateView, BOOK_CSS, ensureHighlightStyle, type FoliateView, type RelocateDetail } from '../lib/foliate'
+  import { createFoliateView, ensureHighlightStyle, type FoliateView, type RelocateDetail } from '../lib/foliate'
   import { loadBook, type OpenableBook } from '../lib/openBook'
   import { db } from '../lib/db'
   import { loadSettings } from '../lib/settings'
@@ -14,6 +14,9 @@
   import { createVocabStore } from '../lib/vocab/store'
   import type { Definition } from '../lib/ai/definition'
   import LookupCard, { type CardState } from './LookupCard.svelte'
+  import ReadingSettings from './ReadingSettings.svelte'
+  import { loadReadingPrefs, saveReadingPrefs, bookCss, webFamiliesOf, WIDTHS, type ReadingPrefs } from '../lib/reading/prefs'
+  import { loadWebFonts, fontFaceCss } from '../lib/reading/fonts'
 
   let { bookId, jumpTo, backLabel = '書架', onClose, onOpenSettings }: {
     bookId: number
@@ -34,7 +37,13 @@
   let progress = $state(0)
   let error = $state('')
   let loading = $state(true)
-  let language = ''
+  let language = $state('')
+  // 「Aa」閱讀設定；PDF 是固定版面，只能換紙張色
+  let prefs = $state<ReadingPrefs>(loadReadingPrefs(localStorage))
+  let showPrefs = $state(false)
+  let fixedLayout = $state(false)
+  let prefsSeq = 0
+  let prefsTimer: ReturnType<typeof setTimeout> | undefined
   let card = $state<CardState | null>(null)
   // 目前卡片對應的查詢內容，收藏時用
   let current: { word: string; sentence: string; definition: Definition; savedId: string | null; cfi?: string } | null = null
@@ -78,7 +87,33 @@
     highlightedDoc = null
   }
 
+  // 套用排版：先載入選到的字型，再把字型宣告一起放進書本 iframe（iframe 讀不到主頁面的字型）
+  async function applyPrefs() {
+    const renderer = view?.renderer
+    if (!renderer || fixedLayout) return
+    const seq = ++prefsSeq
+    const current = prefs
+    const families = webFamiliesOf(current.font)
+    // 字型載不到（例如離線且沒快取）就用系統字體，不擋住閱讀
+    await loadWebFonts(families).catch((err) => console.warn('載入字型失敗，改用系統字體', err))
+    if (seq !== prefsSeq || view?.renderer !== renderer) return
+    renderer.setAttribute('max-inline-size', `${WIDTHS[current.width].px}px`)
+    renderer.setStyles?.(bookCss(current, language, fontFaceCss(families)))
+  }
+
+  function changePrefs(next: ReadingPrefs) {
+    prefs = saveReadingPrefs(localStorage, next)
+    // 拖動字級滑桿時每一格都會觸發，稍等一下再重排，避免一直重新分頁
+    clearTimeout(prefsTimer)
+    prefsTimer = setTimeout(applyPrefs, 120)
+  }
+
   async function onBookClick(doc: Document, e: MouseEvent) {
+    // 設定面板開著時，點書本只是關掉面板
+    if (showPrefs) {
+      showPrefs = false
+      return
+    }
     const target = e.target as Element | null
     if (target?.closest('a')) return
     if (!doc.getSelection()?.isCollapsed) return
@@ -189,7 +224,11 @@
   }
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') closeCard()
+    // 在設定面板的滑桿上按方向鍵是調字級，不是翻頁
+    const typing = (e.target as Element | null)?.closest?.('input, textarea, select')
+    if (e.key === 'Escape' && showPrefs) showPrefs = false
+    else if (e.key === 'Escape') closeCard()
+    else if (typing) return
     else if (e.key === 'ArrowLeft') view?.goLeft()
     else if (e.key === 'ArrowRight') view?.goRight()
   }
@@ -263,6 +302,7 @@
         v.addEventListener('relocate', onRelocate)
         v.addEventListener('load', onSectionLoad)
         const format = book.format ?? 'epub'
+        fixedLayout = format === 'pdf'
         openedBook = await loadBook(book.file, format, {
           fileName: `${book.title}.${format}`,
           title: book.title,
@@ -276,7 +316,8 @@
         await v.init(start ? { lastLocation: start } : { showTextStart: true })
         if (cancelled) return
         // 要等第一個章節載入後再設樣式，否則 foliate 會讀到空的 view
-        v.renderer.setStyles?.(BOOK_CSS)
+        await applyPrefs()
+        if (cancelled) return
         if (jumpTo) highlightCfi(jumpTo)
       } catch (err) {
         if (cancelled) return
@@ -290,6 +331,7 @@
 
     return () => {
       cancelled = true
+      clearTimeout(prefsTimer)
       cancelLookup()
       document.removeEventListener('keydown', onKey)
       view?.close()
@@ -301,7 +343,7 @@
   })
 </script>
 
-<div class="reader">
+<div class="reader" data-reading-theme={prefs.theme === 'auto' ? undefined : prefs.theme}>
   <header>
     <button onclick={onClose} aria-label={`回${backLabel}`}>← {backLabel}</button>
     <div class="heading">
@@ -309,6 +351,7 @@
       {#if chapter}<span class="chapter">{chapter}</span>{/if}
     </div>
     <span class="progress">{Math.round(progress * 100)}%</span>
+    <button class="aa" class:active={showPrefs} onclick={() => (showPrefs = !showPrefs)} aria-label="閱讀設定" aria-expanded={showPrefs}>Aa</button>
   </header>
   {#if peek}<p class="peek-note">從單字本開啟：可以自由翻閱，不會改變你的閱讀進度。</p>{/if}
 
@@ -318,6 +361,9 @@
     {#if error}<p class="status error" role="alert">{error}</p>{/if}
     {#if card}<LookupCard {card} onClose={closeCard} {onOpenSettings} onToggleSave={toggleSave} />{/if}
   </div>
+  {#if showPrefs}
+    <ReadingSettings {prefs} {language} {fixedLayout} onChange={changePrefs} onClose={() => (showPrefs = false)} />
+  {/if}
 
   <footer>
     <button onclick={() => view?.goLeft()} aria-label="上一頁">‹ 上一頁</button>
@@ -333,6 +379,8 @@
     display: flex;
     flex-direction: column;
     background: var(--paper);
+    color: var(--text);
+    transition: background 0.2s;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   header, footer {
@@ -343,6 +391,8 @@
   }
   footer { justify-content: space-between; }
   .title { font-family: var(--font-serif); }
+  .aa { font-family: var(--font-serif); font-size: 1.05rem; padding: 0.3rem 0.9rem; }
+  .aa.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
   .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .title, .chapter { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .title { font-weight: 600; }

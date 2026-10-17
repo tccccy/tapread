@@ -166,6 +166,16 @@ PWA 閱讀器（靜態網站）
 - 備份加入評分、心得、日期與書架（書架以名稱對應）
 - 測試：233 個單元測試
 
+### 閱讀設定「Aa」（2026-10-18）
+- 閱讀頁右上「Aa」：字體、字級（14–28）、行距（緊湊／適中／寬鬆）、頁寬（窄／適中／寬）、紙張（跟隨系統／米白／羊皮紙／夜間）；所有書共用，存在 localStorage `tapread.readingPrefs`
+- 字體（`src/lib/reading/prefs.ts`）：明體（Literata＋思源宋體）、黑體（系統字體）、楷體（霞鶩文楷）、古典（EB Garamond＋思源宋體）、原書（不覆蓋出版社字體）；日文書的漢字優先用日文字形的系統字體
+- 字型用 @fontsource 打包在 App 內（OFL 授權，不連 Google）；中文字型依 unicode-range 切片，只下載讀到的字；不預先快取，抓過的切片由 Service Worker 留著離線用；只保留 woff2
+- 書本 iframe 是 blob: 網址讀不到主頁面的字型，`src/lib/reading/fonts.ts` 把 @font-face 改成絕對網址一起注入
+- App 標題字改用 Literata＋思源宋體（各平台一致）
+- PDF 是固定版面：只能換紙張色（只影響頁面外圍）
+- foliate-js paginator 建置時修補：套用樣式後若已離開閱讀頁不再丟錯
+- 測試：247 個單元測試
+
 ### 下一步
 - 自動同步到使用者自己的 Google 雲端硬碟（需在 Google Cloud 建 OAuth 用戶端；測試階段要逐一加入使用者的 Gmail）
 - P3：詞形還原（收藏 abrir 後，書中 abre、abrió 也上色）
