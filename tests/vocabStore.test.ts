@@ -84,4 +84,24 @@ describe('vocab store', () => {
     await store.remove('es|banco')
     expect(await store.get('es|banco')).toBeUndefined()
   })
+
+  it('moveBookLanguage：把某本書在舊語言下收藏的例句搬到新語言，並與既有的字合併', async () => {
+    await store.save(input({ language: '', bookId: 7, word: 'banco', sentence: 'P1.', definition: def('banco', '長椅') }), NOW)
+    await store.save(input({ language: '', bookId: 8, word: 'banco', sentence: 'Otro.', definition: def('banco', '銀行') }), NOW)
+    await store.save(input({ language: 'es', bookId: 1, word: 'banco', sentence: 'S1.', definition: def('banco', '銀行') }), NOW)
+
+    await store.moveBookLanguage(7, '', 'es')
+
+    const es = await store.get('es|banco')
+    expect(es?.examples.map((x) => x.sentence).sort()).toEqual(['P1.', 'S1.'])
+    // 其他書在舊語言下的例句保留
+    expect((await store.get('|banco'))?.examples.map((x) => x.sentence)).toEqual(['Otro.'])
+  })
+
+  it('moveBookLanguage：舊語言下的字全部搬走後刪除', async () => {
+    await store.save(input({ language: '', bookId: 7, word: 'casa', sentence: 'P.', definition: def('casa', '房子') }), NOW)
+    await store.moveBookLanguage(7, '', 'pt')
+    expect(await store.get('|casa')).toBeUndefined()
+    expect((await store.get('pt|casa'))?.examples[0].contextMeaning).toBe('房子')
+  })
 })

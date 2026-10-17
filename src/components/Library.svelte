@@ -1,9 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { library, requestPersistentStorage, isQuotaError, type BookSummary } from '../lib/library'
-  import { checkBookFile, bookFileErrorMessage } from '../lib/bookFile'
-  import { makeBook } from '../lib/foliate'
+  import { checkBookFile, bookFileErrorMessage, bookFormat } from '../lib/bookFile'
+  import { loadBook } from '../lib/openBook'
   import { normalizeMetadata } from '../lib/metadata'
+  import { loadSettings } from '../lib/settings'
+  import { languageLabel, COMMON_LANGUAGES } from '../lib/languageName'
+  import { db } from '../lib/db'
+  import { createVocabStore } from '../lib/vocab/store'
+
+  const vocab = createVocabStore(db)
 
   let { onOpen, onOpenSettings, onOpenVocab }: {
     onOpen: (id: number) => void
@@ -38,9 +44,14 @@
         error = bookFileErrorMessage(check.reason)
         return
       }
-      const book = await makeBook(file)
+      const format = bookFormat(file.name) ?? 'epub'
+      const fallbackTitle = file.name.replace(/\.[^.]+$/, '')
+      const book = await loadBook(file, format, { fileName: file.name, title: fallbackTitle, language: '' })
       const meta = normalizeMetadata(book.metadata, file.name)
-      const id = await library.addBook({ ...meta, file })
+      book.destroy?.()
+      // PDF、Word 常沒有標註語言，改用設定裡的預設學習語言
+      const language = meta.language || loadSettings(localStorage).defaultLanguage
+      const id = await library.addBook({ ...meta, language, format, file })
       requestPersistentStorage().catch((e) => console.warn('無法要求持久儲存', e))
       onOpen(id)
     } catch (e) {
@@ -78,6 +89,19 @@
     }
   }
 
+  // 沒有語言的書（PDF、Word 常見）：選了語言後，連同先前收藏在「未指定語言」下的字一起搬過去
+  async function setLanguage(book: BookSummary, language: string) {
+    if (!language) return
+    try {
+      await library.setLanguage(book.id, language)
+      await vocab.moveBookLanguage(book.id, book.language, language)
+      await refresh()
+    } catch (e) {
+      console.error('設定語言失敗', e)
+      error = '設定語言失敗，請再試一次。'
+    }
+  }
+
   const percent = (p: number) => `${Math.round(p * 100)}%`
 </script>
 
@@ -95,7 +119,7 @@
       <button onclick={onOpenVocab}>單字本</button>
       <button onclick={onOpenSettings}>設定</button>
       <button class="primary" disabled={busy} onclick={() => fileInput.click()}>
-        {busy ? '匯入中…' : '匯入 EPUB'}
+        {busy ? '匯入中…' : '匯入檔案'}
       </button>
     </div>
   </header>
@@ -107,7 +131,7 @@
   {#if books.length === 0}
     <section class="empty">
       <p>書庫是空的。</p>
-      <p class="muted">點「匯入 EPUB」選檔，或把檔案拖進這個視窗。<br />書只會存在這台裝置的瀏覽器裡，不會上傳。</p>
+      <p class="muted">點「匯入檔案」選檔，或把檔案拖進這個視窗。支援 EPUB、PDF、Word（.docx）。<br />檔案只會存在這台裝置的瀏覽器裡，不會上傳。</p>
     </section>
   {:else}
     <ul>
@@ -116,9 +140,17 @@
           <button class="book" onclick={() => onOpen(book.id)}>
             <span class="title">{book.title}</span>
             <span class="muted">
-              {book.author || '作者不詳'}{book.language ? ` · ${book.language.toUpperCase()}` : ''} · {percent(book.progress)}
+              {book.author || '作者不詳'}{book.language ? ` · ${languageLabel(book.language)}` : ''} · {percent(book.progress)}
             </span>
           </button>
+          {#if !book.language}
+            <select class="lang" aria-label={`設定「${book.title}」的語言`} onchange={(e) => setLanguage(book, e.currentTarget.value)}>
+              <option value="">選擇語言</option>
+              {#each COMMON_LANGUAGES as code (code)}
+                <option value={code}>{languageLabel(code)}</option>
+              {/each}
+            </select>
+          {/if}
           <button class="remove" aria-label={`移除 ${book.title}`} onclick={() => remove(book)}>移除</button>
         </li>
       {/each}
@@ -153,4 +185,8 @@
   }
   .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .remove { color: var(--danger); }
+  .lang {
+    min-height: 44px; max-width: 8.5rem; font: inherit; font-size: 16px; color: var(--accent);
+    background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius); padding: 0 6px;
+  }
 </style>

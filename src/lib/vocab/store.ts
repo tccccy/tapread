@@ -13,6 +13,8 @@ export interface VocabStore {
   dueCards(language: string, bookId?: number, now?: number): Promise<VocabEntry[]>
   review(id: string, grade: ReviewGrade, now?: number): Promise<VocabEntry>
   formLevels(language: string): Promise<Map<string, number>>
+  /** 書改了語言後，把它在舊語言下收藏的例句搬到新語言（與既有的字合併） */
+  moveBookLanguage(bookId: number, from: string, to: string): Promise<void>
 }
 
 export function createVocabStore(db: ReaderDb): VocabStore {
@@ -75,5 +77,25 @@ export function createVocabStore(db: ReaderDb): VocabStore {
     async formLevels(language) {
       return formLevelMap(await db.vocab.where('language').equals(language).toArray())
     },
+
+    moveBookLanguage: (bookId, from, to) =>
+      db.transaction('rw', db.vocab, async () => {
+        if (from === to) return
+        const now = Date.now()
+        const entries = await db.vocab.where('language').equals(from).toArray()
+        for (const entry of entries) {
+          const moving = entry.examples.filter((x) => x.bookId === bookId)
+          if (moving.length === 0) continue
+          for (const x of moving) {
+            const target = await db.vocab.get(vocabId(to, entry.lemma))
+            const definition = { lemma: entry.lemma, pos: entry.pos, contextMeaning: x.contextMeaning, dictMeaning: entry.dictMeaning, note: x.note }
+            await db.vocab.put(addExample(target, { language: to, word: x.word, sentence: x.sentence, definition, bookId, bookTitle: x.bookTitle, cfi: x.cfi }, now))
+          }
+          // 從舊語言的字移除搬走的例句；沒有例句了就整個刪掉
+          const kept = moving.reduce<VocabEntry | null>((e, x) => (e ? removeExample(e, x.word, x.sentence) : null), entry)
+          if (kept) await db.vocab.put(kept)
+          else await db.vocab.delete(entry.id)
+        }
+      }),
   }
 }

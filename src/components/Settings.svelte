@@ -1,11 +1,13 @@
 <script lang="ts">
   import { loadSettings, saveSettings, SettingsValidationError } from '../lib/settings'
+  import { languageLabel, COMMON_LANGUAGES } from '../lib/languageName'
 
   let { onBack }: { onBack: () => void } = $props()
 
   const initial = loadSettings(localStorage)
   let apiKey = $state(initial.geminiApiKey)
   let model = $state(initial.geminiModel)
+  let defaultLanguage = $state(initial.defaultLanguage)
   let showKey = $state(false)
   let message = $state('')
   let error = $state('')
@@ -15,9 +17,10 @@
     message = ''
     error = ''
     try {
-      const saved = saveSettings(localStorage, { geminiApiKey: apiKey, geminiModel: model })
+      const saved = saveSettings(localStorage, { geminiApiKey: apiKey, geminiModel: model, defaultLanguage })
       apiKey = saved.geminiApiKey
       model = saved.geminiModel
+      defaultLanguage = saved.defaultLanguage
       message = '已儲存。'
     } catch (err) {
       if (err instanceof SettingsValidationError) {
@@ -63,6 +66,17 @@
       <input bind:value={model} autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="模型名稱" />
     </section>
 
+    <section>
+      <h2>預設學習語言</h2>
+      <p class="muted">PDF 與 Word 檔通常沒有標註語言，匯入時會用這個設定。影響單字本的語言分類與書中的斷字。</p>
+      <select bind:value={defaultLanguage} aria-label="預設學習語言">
+        <option value="">交給 AI 判斷</option>
+        {#each COMMON_LANGUAGES as code (code)}
+          <option value={code}>{languageLabel(code)}</option>
+        {/each}
+      </select>
+    </section>
+
     <section class="privacy">
       <h2>會送出什麼</h2>
       <p class="muted">點一個字時，只會把「這個字、所在句子與前後各一句、書名」送給 Gemini。整本書不會上傳。</p>
@@ -94,6 +108,10 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0 12px;
+  }
+  select {
+    width: 100%; min-height: 44px; font: inherit; font-size: 16px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 10px;
   }
   .muted { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: 0 0 8px; }
   a { color: var(--accent); }

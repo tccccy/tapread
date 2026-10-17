@@ -65,3 +65,11 @@ describe('library', () => {
     expect(await lib.listBooks()).toEqual([])
   })
 })
+
+describe('setLanguage', () => {
+  it('更新書的語言', async () => {
+    const id = await lib.addBook({ title: 'T', author: '', language: '', file: epub() })
+    await lib.setLanguage(id, 'es')
+    expect((await lib.getBook(id))?.language).toBe('es')
+  })
+})

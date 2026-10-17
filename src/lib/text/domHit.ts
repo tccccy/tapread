@@ -1,10 +1,11 @@
-// 把點擊座標對應到「區塊文字 + 偏移」，再把偏移轉回 Range；只在瀏覽器內使用
+// 把點擊座標對應到「區塊文字 + 偏移」；只在瀏覽器內使用
+import { buildTextIndex, offsetOf, type TextIndex } from './textIndex'
 const BLOCK_SELECTOR =
   'p,li,blockquote,dd,dt,td,th,h1,h2,h3,h4,h5,h6,figcaption,pre,div,section,article,body'
 
 export interface DomHit {
   block: Element
-  text: string
+  index: TextIndex
   offset: number
 }
 
@@ -28,31 +29,9 @@ export function hitAt(doc: Document, x: number, y: number): DomHit | null {
   if (!caret || caret.node.nodeType !== Node.TEXT_NODE) return null
   const block = caret.node.parentElement?.closest(BLOCK_SELECTOR)
   if (!block) return null
-  const before = doc.createRange()
-  before.setStart(block, 0)
-  before.setEnd(caret.node, caret.offset)
-  return { block, text: block.textContent ?? '', offset: before.toString().length }
-}
-
-export function rangeForOffsets(block: Element, start: number, end: number): Range | null {
-  const doc = block.ownerDocument
-  const walker = doc.createTreeWalker(block, NodeFilter.SHOW_TEXT)
-  const range = doc.createRange()
-  let pos = 0
-  let started = false
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const len = (node as Text).data.length
-    if (!started && start < pos + len) {
-      range.setStart(node, start - pos)
-      started = true
-    }
-    if (started && end <= pos + len) {
-      range.setEnd(node, end - pos)
-      return range
-    }
-    pos += len
-  }
-  return null
+  const index = buildTextIndex(block)
+  const offset = offsetOf(index, caret.node, caret.offset)
+  return offset === null ? null : { block, index, offset }
 }
 
 // caret API 會回傳「最近的」位置，點在頁邊空白也有結果；確認點擊真的落在字上

@@ -24,7 +24,7 @@ export interface FoliateRenderer extends HTMLElement {
 export interface FoliateView extends HTMLElement {
   book: FoliateBook
   renderer: FoliateRenderer
-  open(file: File | Blob): Promise<void>
+  open(book: File | Blob | FoliateBook): Promise<void>
   init(opts: { lastLocation?: string | null; showTextStart?: boolean }): Promise<void>
   getCFI(index: number, range?: Range): string
   resolveNavigation(target: string): { index: number; anchor?: (doc: Document) => Range | null } | undefined
@@ -37,11 +37,20 @@ export const makeBook = (file: File | Blob) => rawMakeBook(file) as Promise<Foli
 
 export const createFoliateView = () => document.createElement('foliate-view') as FoliateView
 
-// 注入書本 iframe 內的樣式
+// 可重排版的書（EPUB、Word）注入 iframe 的排版樣式
 export const BOOK_CSS = `
   html { color-scheme: light dark; }
   p, li, blockquote, dd { line-height: 1.6; text-align: start; hyphens: auto; }
   @media (prefers-color-scheme: dark) { a:link { color: #8ec5b4; } }
-  ${VOCAB_HIGHLIGHT_CSS}
-  ${LOOKUP_HIGHLIGHT_CSS}
 `
+
+const HIGHLIGHT_STYLE_ID = 'polyglot-reader-highlights'
+
+/** 單字上色與查詢標示的樣式；每一頁都要有，PDF 的固定版面沒有 setStyles 可用，所以直接插入 */
+export function ensureHighlightStyle(doc: Document) {
+  if (doc.getElementById(HIGHLIGHT_STYLE_ID)) return
+  const style = doc.createElement('style')
+  style.id = HIGHLIGHT_STYLE_ID
+  style.textContent = `${VOCAB_HIGHLIGHT_CSS}\n${LOOKUP_HIGHLIGHT_CSS}`
+  ;(doc.head ?? doc.documentElement).append(style)
+}

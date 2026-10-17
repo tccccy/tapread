@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { library } from '../lib/library'
-  import { createFoliateView, BOOK_CSS, type FoliateView, type RelocateDetail } from '../lib/foliate'
+  import { createFoliateView, BOOK_CSS, ensureHighlightStyle, type FoliateView, type RelocateDetail } from '../lib/foliate'
+  import { loadBook, type OpenableBook } from '../lib/openBook'
   import { db } from '../lib/db'
   import { loadSettings } from '../lib/settings'
   import { createLookup } from '../lib/lookup'
@@ -53,6 +54,11 @@
   let highlightedDoc: Document | null = null
   // foliate 可能重複載入同一章節，避免重複綁定監聽器
   const boundDocs = new WeakSet<Document>()
+  // 每個 iframe 文件對應的章節（PDF 為頁）索引；PDF 的固定版面 getContents 不提供 index
+  const docIndex = new WeakMap<Document, number>()
+  let openedBook: OpenableBook | null = null
+  // 「回到書中」要標出的位置；頁面重新繪製時（PDF 文字層較晚出現、改視窗大小）會再標一次，直到使用者點別的字
+  let pendingJump: string | null = null
 
   const SETTINGS_ERRORS = ['no-key', 'auth', 'model']
 
@@ -63,6 +69,7 @@
   }
 
   function closeCard() {
+    pendingJump = null
     cancelLookup()
     card = null
     if (highlightedDoc) setLookupHighlight(highlightedDoc, null)
@@ -155,7 +162,7 @@
 
   // 單字在書中的位置；算不出來（例如特殊排版）時就不存，只是無法「回到書中」
   function cfiOf(doc: Document, range: Range): string | undefined {
-    const index = view?.renderer.getContents?.().find((c) => c.doc === doc)?.index
+    const index = docIndex.get(doc) ?? view?.renderer.getContents?.().find((c) => c.doc === doc)?.index
     if (!view || index === undefined) return undefined
     try {
       return view.getCFI(index, range)
@@ -168,7 +175,8 @@
   function highlightCfi(cfi: string) {
     try {
       const target = view?.resolveNavigation(cfi)
-      const doc = view?.renderer.getContents?.().find((c) => c.index === target?.index)?.doc
+      const doc = loadedDocs().find((d) => target && docIndex.get(d) === target.index)
+        ?? view?.renderer.getContents?.().find((c) => c.index === target?.index)?.doc
       const range = doc && target?.anchor?.(doc)
       if (!doc || !range) return
       setLookupHighlight(doc, range)
@@ -203,11 +211,30 @@
     if (reason && PAGE_MOVES.includes(reason)) closeCard()
   }
 
+  // PDF 的文字層在 load 之後才非同步畫出，重新繪製時也會整個換掉；內容變動後重新上色並重新標示跳轉位置
+  function watchForRedraw(doc: Document) {
+    const win = doc.defaultView
+    if (!win || !doc.body) return
+    let scheduled = false
+    new win.MutationObserver(() => {
+      if (scheduled) return
+      scheduled = true
+      win.requestAnimationFrame(() => {
+        scheduled = false
+        applyVocabHighlights(doc, vocabLevels, language)
+        if (pendingJump && docIndex.get(doc) === view?.resolveNavigation(pendingJump)?.index) highlightCfi(pendingJump)
+      })
+    }).observe(doc.body, { childList: true, subtree: true })
+  }
+
   // 書本內容在 iframe 裡，鍵盤事件要另外綁
   const onSectionLoad = (e: Event) => {
-    const { doc } = (e as CustomEvent<{ doc: Document }>).detail
+    const { doc, index } = (e as CustomEvent<{ doc: Document; index: number }>).detail
+    if (typeof index === 'number') docIndex.set(doc, index)
+    ensureHighlightStyle(doc)
     if (boundDocs.has(doc)) return
     boundDocs.add(doc)
+    watchForRedraw(doc)
     doc.addEventListener('keydown', onKey)
     doc.addEventListener('click', (ev) => onBookClick(doc, ev))
     applyVocabHighlights(doc, vocabLevels, language)
@@ -215,6 +242,7 @@
 
   onMount(() => {
     let cancelled = false
+    pendingJump = jumpTo ?? null
     ;(async () => {
       try {
         const book = await library.getBook(bookId)
@@ -232,7 +260,14 @@
         container.append(v)
         v.addEventListener('relocate', onRelocate)
         v.addEventListener('load', onSectionLoad)
-        await v.open(book.file)
+        const format = book.format ?? 'epub'
+        openedBook = await loadBook(book.file, format, {
+          fileName: `${book.title}.${format}`,
+          title: book.title,
+          language: book.language,
+        })
+        if (cancelled) return
+        await v.open(openedBook)
         if (cancelled) return
         v.renderer.addEventListener('relocate', onRendererRelocate)
         const start = jumpTo ?? book.lastCfi
@@ -258,6 +293,8 @@
       view?.close()
       view?.remove()
       view = null
+      openedBook?.destroy?.()
+      openedBook = null
     }
   })
 </script>

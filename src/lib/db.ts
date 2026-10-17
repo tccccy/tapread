@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Definition } from './ai/definition'
 import type { VocabEntry } from './vocab/model'
+import type { BookFormat } from './bookFile'
 
 export interface BookSummary {
   id: number
@@ -11,6 +12,8 @@ export interface BookSummary {
   lastOpenedAt: number
   lastCfi: string | null
   progress: number
+  /** 舊資料沒有這欄，視為 epub */
+  format?: BookFormat
 }
 
 // 檔案本體另存一表，列書目時不必把整本書讀進記憶體（iPad 上書多時很重要）

@@ -18,28 +18,38 @@ describe('settings', () => {
 
   it('儲存後可讀回，並修剪空白', () => {
     const s = memoryStorage()
-    saveSettings(s, { geminiApiKey: '  AIzaTest  ', geminiModel: ' gemini-3.6-flash ' })
-    expect(loadSettings(s)).toEqual({ geminiApiKey: 'AIzaTest', geminiModel: 'gemini-3.6-flash' })
+    saveSettings(s, { geminiApiKey: '  AIzaTest  ', geminiModel: ' gemini-3.6-flash ', defaultLanguage: 'es' })
+    expect(loadSettings(s)).toEqual({ geminiApiKey: 'AIzaTest', geminiModel: 'gemini-3.6-flash', defaultLanguage: 'es' })
   })
 
   it('模型名稱留空時退回預設', () => {
     const s = memoryStorage()
-    saveSettings(s, { geminiApiKey: 'k', geminiModel: '   ' })
+    saveSettings(s, { geminiApiKey: 'k', geminiModel: '   ', defaultLanguage: '' })
     expect(loadSettings(s).geminiModel).toBe(DEFAULT_SETTINGS.geminiModel)
   })
 
   it('拒絕含空白或非法字元的模型名稱', () => {
-    expect(() => saveSettings(memoryStorage(), { geminiApiKey: 'k', geminiModel: 'a b/../c' })).toThrow()
+    expect(() => saveSettings(memoryStorage(), { geminiApiKey: 'k', geminiModel: 'a b/../c', defaultLanguage: '' })).toThrow()
   })
 
   it('拒絕含換行、空白或非 ASCII 字元的金鑰（HTTP 標頭放不下）', () => {
     for (const bad of ['abc\ndef', 'abc def', 'ＡＩｚａ金鑰']) {
-      expect(() => saveSettings(memoryStorage(), { geminiApiKey: bad, geminiModel: '' })).toThrow(/金鑰/)
+      expect(() => saveSettings(memoryStorage(), { geminiApiKey: bad, geminiModel: '', defaultLanguage: '' })).toThrow(/金鑰/)
     }
   })
 
   it('允許清空金鑰', () => {
-    expect(saveSettings(memoryStorage(), { geminiApiKey: '', geminiModel: '' }).geminiApiKey).toBe('')
+    expect(saveSettings(memoryStorage(), { geminiApiKey: '', geminiModel: '', defaultLanguage: '' }).geminiApiKey).toBe('')
+  })
+
+  it('預設學習語言預設為空（自動判斷），舊設定沒有這欄也能讀', () => {
+    const s = memoryStorage()
+    s.setItem('polyglot-reader.settings', JSON.stringify({ geminiApiKey: 'k', geminiModel: 'm' }))
+    expect(loadSettings(s).defaultLanguage).toBe('')
+  })
+
+  it('拒絕不合法的語言碼', () => {
+    expect(() => saveSettings(memoryStorage(), { geminiApiKey: '', geminiModel: '', defaultLanguage: 'es-ES; x' })).toThrow(/語言/)
   })
 
   it('儲存內容損壞時回傳預設值', () => {

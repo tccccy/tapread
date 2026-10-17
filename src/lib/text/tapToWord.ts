@@ -1,4 +1,5 @@
-import { hitAt, rangeContainsPoint, rangeForOffsets } from './domHit'
+import { hitAt, rangeContainsPoint } from './domHit'
+import { rangeFor } from './textIndex'
 import { sentenceContext, wordAt, type SentenceContext } from './wordContext'
 
 export interface TappedWord extends SentenceContext {
@@ -10,9 +11,10 @@ export interface TappedWord extends SentenceContext {
 export function tapToWord(doc: Document, x: number, y: number, language: string): TappedWord | null {
   const hit = hitAt(doc, x, y)
   if (!hit) return null
-  const w = wordAt(hit.text, hit.offset, language)
+  const { text } = hit.index
+  const w = wordAt(text, hit.offset, language)
   if (!w) return null
-  const range = rangeForOffsets(hit.block, w.start, w.end)
+  const range = rangeFor(hit.index, w.start, w.end)
   if (!range || !rangeContainsPoint(range, x, y)) return null
-  return { word: w.word, range, ...sentenceContext(hit.text, w.start, language) }
+  return { word: w.word, range, ...sentenceContext(text, w.start, language) }
 }
