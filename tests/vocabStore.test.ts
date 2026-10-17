@@ -5,8 +5,7 @@ import { createVocabStore, type VocabStore } from '../src/lib/vocab/store'
 import type { SaveInput } from '../src/lib/vocab/model'
 
 const NOW = Date.UTC(2026, 9, 17, 6, 0)
-const DAY = 86_400_000
-const def = (lemma: string, meaning: string) => ({ lemma, pos: '', contextMeaning: meaning, dictMeaning: '', note: '' })
+const def = (lemma: string, meaning: string) => ({ lemma, pos: '', contextMeaning: meaning, dictMeaning: '', note: '', cefr: '' })
 const input = (over: Partial<SaveInput>): SaveInput => ({
   language: 'es', word: 'banco', sentence: 'S1.', definition: def('banco', '長椅'), bookId: 1, bookTitle: 'A', ...over,
 })
@@ -59,14 +58,6 @@ describe('vocab store', () => {
     expect((await store.list('es', 1)).map((e) => e.lemma)).toEqual(['a'])
   })
 
-  it('dueCards 只回傳到期的字', async () => {
-    await store.save(input({ word: 'a', definition: def('a', 'x') }), NOW)
-    await store.save(input({ word: 'b', definition: def('b', 'x') }), NOW)
-    await store.review('es|a', 'good', NOW)
-    expect((await store.dueCards('es', undefined, NOW + 1000)).map((e) => e.lemma)).toEqual(['b'])
-    expect((await store.dueCards('es', undefined, NOW + 2 * DAY)).map((e) => e.lemma).sort()).toEqual(['a', 'b'])
-  })
-
   it('review 更新熟練度並回傳新狀態', async () => {
     await store.save(input({}), NOW)
     const e = await store.review('es|banco', 'known', NOW)
@@ -103,5 +94,11 @@ describe('vocab store', () => {
     await store.moveBookLanguage(7, '', 'pt')
     expect(await store.get('|casa')).toBeUndefined()
     expect((await store.get('pt|casa'))?.examples[0].contextMeaning).toBe('房子')
+  })
+
+  it('getMany 依傳入順序取回，略過不存在的 id', async () => {
+    await store.save(input({ word: 'a', definition: def('a', 'x') }), NOW)
+    await store.save(input({ word: 'b', definition: def('b', 'x') }), NOW)
+    expect((await store.getMany(['es|b', 'es|nope', 'es|a'])).map((e) => e.lemma)).toEqual(['b', 'a'])
   })
 })

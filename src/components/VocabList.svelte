@@ -5,10 +5,10 @@
   import { queryVocab, type VocabSort } from '../lib/vocab/list'
   import ExampleSentence from './ExampleSentence.svelte'
 
-  let { entries, language, bookId, bookIds, onChanged, onJump }: {
+  let { entries, language, bookIds, onChanged, onJump }: {
+    /** 已套用篩選的字 */
     entries: VocabEntry[]
     language: string
-    bookId: number | undefined
     /** 書庫裡還在的書；書被移除後就不能回到書中 */
     bookIds: Set<number>
     onChanged: () => void
@@ -21,7 +21,7 @@
   let sort = $state<VocabSort>('recent')
   let error = $state('')
 
-  const shown = $derived(queryVocab(entries, { query, sort, bookId, locale: language }))
+  const shown = $derived(queryVocab(entries, { query, sort, locale: language }))
   const dateFormat = new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' })
 
   async function run(action: () => Promise<void>) {
@@ -66,6 +66,7 @@
             <summary>
               <span class="lemma">{e.lemma}</span>
               {#if e.pos}<span class="pos">{e.pos}</span>{/if}
+              {#if e.cefr}<span class="pos cefr">{e.cefr}</span>{/if}
               <span class="gist">{e.examples[0]?.contextMeaning ?? e.dictMeaning}</span>
               <span class="level" title={`熟練度 ${e.level}/${MAX_LEVEL}`} aria-label={`熟練度 ${e.level}/${MAX_LEVEL}`}>
                 {#if e.level >= MAX_LEVEL}已熟{:else}{'●'.repeat(e.level)}{'○'.repeat(MAX_LEVEL - 1 - e.level)}{/if}
@@ -116,6 +117,7 @@
   summary::-webkit-details-marker { display: none; }
   .lemma { font-weight: 700; font-size: 1.1rem; }
   .pos { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; }
+  .cefr { color: var(--accent); border-color: var(--accent); }
   .gist { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .level { font-size: 0.75rem; color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
   .detail { padding: 0 14px 14px; border-top: 1px solid var(--border); }

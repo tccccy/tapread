@@ -1,5 +1,5 @@
 {
-  "name": "polyglot-reader",
+  "name": "tapread",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "dexie": "4.4.6",
+    "fflate": "0.8.3",
     "mammoth": "1.13.0"
   },
   "devDependencies": {

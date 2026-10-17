@@ -114,8 +114,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: '多語閱讀器',
-        short_name: '閱讀器',
+        name: 'TapRead',
+        short_name: 'TapRead',
         description: '讀外文書時點詞即得上下文釋義，書檔只存在你的裝置',
         lang: 'zh-Hant-TW',
         theme_color: '#2f5d50',

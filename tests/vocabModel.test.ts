@@ -8,7 +8,7 @@ const input = (over: Partial<SaveInput> = {}): SaveInput => ({
   language: 'es',
   word: 'Banco',
   sentence: 'Miró el banco del parque.',
-  definition: { lemma: 'banco', pos: '名詞', contextMeaning: '長椅', dictMeaning: '長椅；銀行', note: '' },
+  definition: { lemma: 'banco', pos: '名詞', contextMeaning: '長椅', dictMeaning: '長椅；銀行', note: '', cefr: '' },
   bookId: 1,
   bookTitle: 'La carta',
   ...over,
@@ -33,7 +33,7 @@ describe('addExample', () => {
     const frozen = structuredClone(first)
     const merged = addExample(first, input({
       word: 'bancos', sentence: 'Fue a dos bancos.', bookId: 2, bookTitle: 'Otro',
-      definition: { lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '長椅；銀行', note: '' },
+      definition: { lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '長椅；銀行', note: '', cefr: '' },
     }), NOW + 1)
     expect(first).toEqual(frozen)
     expect(merged.examples.map((x) => x.contextMeaning)).toEqual(['長椅', '銀行'])
@@ -129,7 +129,7 @@ describe('isDue', () => {
 describe('formLevelMap', () => {
   it('字形 → 熟練度；已熟的字不上色', () => {
     const a = addExample(undefined, input(), NOW)
-    const b = applyReview(addExample(undefined, input({ word: 'abrió', sentence: 'Abrió.', definition: { lemma: 'abrir', pos: '', contextMeaning: '打開', dictMeaning: '', note: '' } }), NOW), 'known', NOW)
+    const b = applyReview(addExample(undefined, input({ word: 'abrió', sentence: 'Abrió.', definition: { lemma: 'abrir', pos: '', contextMeaning: '打開', dictMeaning: '', note: '', cefr: '' } }), NOW), 'known', NOW)
     const map = formLevelMap([a, b])
     expect(map.get('banco')).toBe(1)
     expect(map.has('abrió')).toBe(false)

@@ -128,7 +128,7 @@
 
   {#if needsKey}
     <section class="welcome" aria-labelledby="welcome-title">
-      <h2 id="welcome-title">歡迎使用多語閱讀器</h2>
+      <h2 id="welcome-title">歡迎使用 TapRead</h2>
       <p>讀外文時點一下不懂的字，就會看到它在這一句裡的中文意思，還能收藏起來複習。</p>
       <ol>
         <li><strong>設定 Gemini 金鑰</strong>：免費，約 2 分鐘，點字查詢需要它</li>
@@ -181,9 +181,11 @@
     min-height: 100%;
   }
   main.dragging { outline: 3px dashed var(--accent); outline-offset: -8px; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
   h1 { font-size: 1.5rem; margin: 0.5rem 0; }
   .actions { display: flex; gap: 8px; }
+  /* 手機上按鈕文字不換行；空間不夠時整排移到標題下方 */
+  .actions button { white-space: nowrap; }
   .error { color: var(--danger); }
   .empty { text-align: center; padding: 15vh 0; }
   .muted { color: var(--muted); font-size: 0.9rem; }

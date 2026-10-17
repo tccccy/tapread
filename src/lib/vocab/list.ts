@@ -5,7 +5,6 @@ export type VocabSort = 'recent' | 'alpha' | 'level'
 export interface VocabQuery {
   query: string
   sort: VocabSort
-  bookId?: number
   /** 字母排序用的語言規則，例如 es */
   locale?: string
 }
@@ -23,12 +22,10 @@ const collator = (locale?: string) => {
   }
 }
 
-/** 搜尋、篩書、排序；回傳新陣列 */
-export function queryVocab(entries: VocabEntry[], { query, sort, bookId, locale }: VocabQuery): VocabEntry[] {
+/** 搜尋與排序；回傳新陣列（其他篩選見 filters.ts） */
+export function queryVocab(entries: VocabEntry[], { query, sort, locale }: VocabQuery): VocabEntry[] {
   const q = query.trim().toLocaleLowerCase()
-  const matched = entries.filter(
-    (e) => (bookId === undefined || e.bookIds.includes(bookId)) && (!q || haystack(e).includes(q)),
-  )
+  const matched = entries.filter((e) => !q || haystack(e).includes(q))
   const byRecent = (a: VocabEntry, b: VocabEntry) => b.createdAt - a.createdAt
   if (sort === 'alpha') {
     const c = collator(locale)

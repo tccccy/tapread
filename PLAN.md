@@ -1,7 +1,7 @@
-# 多語言 AI 閱讀器（PWA 版）開發計畫
+# TapRead（多語言 AI 閱讀器，PWA 版）開發計畫
 
 > 建立日期：2026-10-17
-> 狀態：已上線 https://tcy311.github.io/polyglot-reader/ （P0、P1、P2、P4 完成），下一步 P3
+> 狀態：已上線 https://tcy311.github.io/tapread/ （P0、P1、P2、P4 完成），下一步 P3
 > 前一版（LUTE + Ollama 本機版）已封存於 `docs/archive-lute-plan.md`
 
 ---
@@ -134,11 +134,27 @@ PWA 閱讀器（靜態網站）
 - PWA 改為 prompt 模式：有新版本時底部提示「更新」；每小時與切回 App 時檢查更新
 
 ### 部署（完成，2026-10-17）
-- 網址：https://tcy311.github.io/polyglot-reader/
-- Repo：https://github.com/tcy311/polyglot-reader（公開；只含閱讀器，作者 email 為 GitHub noreply）
+- 網址：https://tcy311.github.io/tapread/（2026-10-17 由 polyglot-reader 改名為 TapRead）
+- Repo：https://github.com/tcy311/tapread（公開；只含閱讀器，作者 email 為 GitHub noreply）
 - 開發仍在本機 `專案/閱讀器/`（上層 `專案/` repo）；發布用 `scripts/publish-github.sh`：
   抽出 `閱讀器/` 歷史 → email 改 noreply → 檢查無個人 email／金鑰 → 推到 GitHub main
   （改寫結果固定，每次只會接上新 commit；可先加 `--dry-run` 檢查）
 - 推到 main 後 GitHub Actions（`.github/workflows/deploy.yml`）自動：npm ci → 型別檢查 → 測試 → 建置 → 部署；action 固定 commit SHA
 - 使用者端：有新版本時 App 底部會提示「更新」
+
+### 單字本篩選、難度、改名、備份（完成，2026-10-17）
+- **篩選**（`src/lib/vocab/filters.ts`）：熟練度、難度（CEFR）、詞性（AI 自由文字歸成 6 類）、收藏時間（今天／7 天／30 天）、書、一字多義；同類複選為「或」、不同類為「且」；每個選項顯示套用其他篩選後的字數；統計、清單與「開始複習」都只用篩選後的字
+- **CEFR 難度**：查詞時 Gemini 一併回傳（enum A1–C2／unknown），顯示在釋義卡片與清單；釋義快取 key 升為 v2，舊快取自然失效；改版前收藏的字為「未分級」
+- **改名 TapRead**：標題、PWA 名稱、README；網址改為 /tapread/。IndexedDB 名稱與設定的 localStorage key 刻意沿用舊名（同網域，使用者資料不受影響）
+- **手機版面**：書庫標題列按鈕不換行、空間不足時移到標題下；確認 375px 寬沒有橫向捲動
+- **備份與同步（手動）**（`src/lib/backup/`）：設定頁匯出 zip（含書檔／只有單字與進度），平板手機用系統分享選單（可 AirDrop、存到檔案）
+  - 不含 API 金鑰
+  - 匯入時：同一本書以檔案內容 SHA-256 辨識並自動對應書號；例句聯集、熟練度與閱讀進度採較新的一邊；重複匯入不會重複
+  - 備份內容視為不可信：逐欄驗證、壞資料略過並計數；書檔逐本解壓（每本上限 200 MB）並重算雜湊比對；zip 路徑限定 `books/<數字>.<副檔名>`
+  - 已知限制：匯出時所有書檔會同時放在記憶體，書很多時（數百 MB）iPad 可能吃不消，可改用「只有單字與進度」
+- 測試：207 個單元測試
+
+### 下一步
+- 自動同步到使用者自己的 Google 雲端硬碟（需在 Google Cloud 建 OAuth 用戶端；測試階段要逐一加入使用者的 Gmail）
+- P3：詞形還原（收藏 abrir 後，書中 abre、abrió 也上色）
 

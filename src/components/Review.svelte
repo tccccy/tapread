@@ -2,15 +2,16 @@
   import { onMount } from 'svelte'
   import { db } from '../lib/db'
   import { createVocabStore } from '../lib/vocab/store'
-  import { MAX_LEVEL, type ReviewGrade, type VocabEntry, type VocabExample } from '../lib/vocab/model'
+  import { type ReviewGrade, type VocabEntry, type VocabExample } from '../lib/vocab/model'
   import { languageLabel } from '../lib/languageName'
-  import type { ReviewMode } from './VocabHome.svelte'
   import ExampleSentence from './ExampleSentence.svelte'
 
-  let { language, bookId, mode, onDone }: {
+  let { language, ids, preferBookIds, onDone }: {
     language: string
-    bookId: number | undefined
-    mode: ReviewMode
+    /** 要複習的字（已依篩選與模式決定順序） */
+    ids: string[]
+    /** 篩選了特定書時，優先出那幾本書的例句 */
+    preferBookIds: number[]
     onDone: () => void
   } = $props()
 
@@ -29,7 +30,7 @@
 
   // 依書篩選時優先用那本書的例句；多個例句時隨機挑一個，換不同句子練習
   const pickExample = (entry: VocabEntry) => {
-    const pool = entry.examples.filter((x) => bookId === undefined || x.bookId === bookId)
+    const pool = entry.examples.filter((x) => preferBookIds.length === 0 || preferBookIds.includes(x.bookId))
     const list = pool.length > 0 ? pool : entry.examples
     return list[Math.floor(Math.random() * list.length)] ?? null
   }
@@ -42,9 +43,7 @@
 
   onMount(async () => {
     try {
-      const cards = mode === 'due'
-        ? await vocab.dueCards(language, bookId)
-        : (await vocab.list(language, bookId)).filter((e) => e.level < MAX_LEVEL)
+      const cards = await vocab.getMany(ids)
       total = cards.length
       showNext(cards)
     } catch (e) {

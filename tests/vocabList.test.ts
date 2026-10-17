@@ -35,10 +35,6 @@ describe('queryVocab', () => {
     expect(lemmas(queryVocab(entries, { query: 'frase con casa', sort: 'recent' }))).toEqual(['casa'])
   })
 
-  it('依書篩選', () => {
-    expect(lemmas(queryVocab(entries, { query: '', sort: 'recent', bookId: 2 }))).toEqual(['casa'])
-  })
-
   it('不修改傳入的陣列', () => {
     const copy = [...entries]
     queryVocab(entries, { query: '', sort: 'alpha' })

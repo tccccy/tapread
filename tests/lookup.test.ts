@@ -5,7 +5,7 @@ import { createDb } from '../src/lib/db'
 import { createDefinitionCache } from '../src/lib/definitionCache'
 
 const req = { word: 'Banco', sentence: 'Fue al banco.', before: '', after: '', language: 'es', bookTitle: 'T' }
-const def = { lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '', note: '' }
+const def = { lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '', note: '', cefr: 'A2' }
 
 let n = 0
 const freshCache = () => createDefinitionCache(createDb(`lookup-test-${++n}`))

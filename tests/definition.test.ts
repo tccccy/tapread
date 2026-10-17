@@ -18,6 +18,10 @@ describe('buildDefinePrompt', () => {
     }
   })
 
+  it('要求回傳 CEFR 難度', () => {
+    expect(buildDefinePrompt(req)).toMatch(/cefr/i)
+  })
+
   it('語言未知時請模型自行判斷', () => {
     expect(buildDefinePrompt({ ...req, language: '' })).toMatch(/language of the sentence/i)
   })
@@ -33,8 +37,14 @@ describe('parseDefinition', () => {
 
   it('轉成 camelCase 並修剪空白', () => {
     expect(parseDefinition({ ...ok, lemma: ' banco ' })).toEqual({
-      lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '長椅；銀行', note: '',
+      lemma: 'banco', pos: '名詞', contextMeaning: '銀行', dictMeaning: '長椅；銀行', note: '', cefr: '',
     })
+  })
+
+  it('CEFR 難度：合法值保留（轉大寫），其他一律為空', () => {
+    expect(parseDefinition({ ...ok, cefr: 'b2' }).cefr).toBe('B2')
+    expect(parseDefinition({ ...ok, cefr: 'unknown' }).cefr).toBe('')
+    expect(parseDefinition({ ...ok, cefr: 'Z9' }).cefr).toBe('')
   })
 
   it('接受 JSON 字串', () => {

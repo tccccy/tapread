@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 把「閱讀器」從上層的 專案/ repo 抽出來推到 GitHub（tcy311/polyglot-reader）。
+# 把「閱讀器」從上層的 專案/ repo 抽出來推到 GitHub（tcy311/tapread）。
 # - 只保留 閱讀器/ 的檔案與歷史，不含其他專案
 # - 作者／提交者 email 一律換成 GitHub 的 noreply，避免公開個人信箱
 # - 改寫結果是確定的（保留原本的時間），之後再發布只會在後面接上新 commit，不需要 force push
@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PREFIX="閱讀器"
-REMOTE="https://github.com/tcy311/polyglot-reader.git"
+REMOTE="https://github.com/tcy311/tapread.git"
 NOREPLY="276561655+tcy311@users.noreply.github.com"
 NAME="tcy311"
 

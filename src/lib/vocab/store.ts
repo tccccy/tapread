@@ -1,5 +1,5 @@
 import type { ReaderDb } from '../db'
-import { addExample, applyReview, formLevelMap, isDue, removeExample, sameExample, type ReviewGrade, type SaveInput, type VocabEntry, vocabId } from './model'
+import { addExample, applyReview, formLevelMap, removeExample, sameExample, type ReviewGrade, type SaveInput, type VocabEntry, vocabId } from './model'
 
 export interface VocabStore {
   save(input: SaveInput, now?: number): Promise<VocabEntry>
@@ -7,10 +7,10 @@ export interface VocabStore {
   /** 找出收藏了「這個字形在這一句」的那筆單字 */
   findSaved(language: string, word: string, sentence: string): Promise<VocabEntry | undefined>
   get(id: string): Promise<VocabEntry | undefined>
+  getMany(ids: string[]): Promise<VocabEntry[]>
   remove(id: string): Promise<void>
   languages(): Promise<{ language: string; count: number }[]>
   list(language: string, bookId?: number): Promise<VocabEntry[]>
-  dueCards(language: string, bookId?: number, now?: number): Promise<VocabEntry[]>
   review(id: string, grade: ReviewGrade, now?: number): Promise<VocabEntry>
   formLevels(language: string): Promise<Map<string, number>>
   /** 書改了語言後，把它在舊語言下收藏的例句搬到新語言（與既有的字合併） */
@@ -47,6 +47,7 @@ export function createVocabStore(db: ReaderDb): VocabStore {
         .first(),
 
     get: (id) => db.vocab.get(id),
+    getMany: async (ids) => (await db.vocab.bulkGet(ids)).filter((e): e is VocabEntry => e !== undefined),
     remove: (id) => db.vocab.delete(id),
 
     async languages() {
@@ -58,11 +59,6 @@ export function createVocabStore(db: ReaderDb): VocabStore {
     async list(language, bookId) {
       const entries = await byLanguage(language, bookId)
       return entries.sort((a, b) => b.createdAt - a.createdAt || b.updatedAt - a.updatedAt)
-    },
-
-    async dueCards(language, bookId, now = Date.now()) {
-      const entries = await byLanguage(language, bookId)
-      return entries.filter((e) => isDue(e, now)).sort((a, b) => a.dueAt - b.dueAt)
     },
 
     review: (id, grade, now = Date.now()) =>
@@ -88,7 +84,7 @@ export function createVocabStore(db: ReaderDb): VocabStore {
           if (moving.length === 0) continue
           for (const x of moving) {
             const target = await db.vocab.get(vocabId(to, entry.lemma))
-            const definition = { lemma: entry.lemma, pos: entry.pos, contextMeaning: x.contextMeaning, dictMeaning: entry.dictMeaning, note: x.note }
+            const definition = { lemma: entry.lemma, pos: entry.pos, contextMeaning: x.contextMeaning, dictMeaning: entry.dictMeaning, note: x.note, cefr: entry.cefr ?? '' }
             await db.vocab.put(addExample(target, { language: to, word: x.word, sentence: x.sentence, definition, bookId, bookTitle: x.bookTitle, cfi: x.cfi }, now))
           }
           // 從舊語言的字移除搬走的例句；沒有例句了就整個刪掉

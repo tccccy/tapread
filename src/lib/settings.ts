@@ -17,6 +17,7 @@ export class SettingsValidationError extends Error {
   name = 'SettingsValidationError'
 }
 
+// 沿用改名前的舊 key，改掉會讓使用者要重新貼金鑰
 const STORAGE_KEY = 'polyglot-reader.settings'
 const MODEL_NAME = /^[a-z0-9][a-z0-9.\-]*$/i
 // 金鑰要放進 HTTP 標頭：只允許可見 ASCII

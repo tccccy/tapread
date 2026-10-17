@@ -2,6 +2,7 @@
   import { loadSettings, saveSettings, validateSettings, SettingsValidationError } from '../lib/settings'
   import { languageLabel, COMMON_LANGUAGES } from '../lib/languageName'
   import { testGeminiKey, aiErrorMessage, AiError } from '../lib/ai/gemini'
+  import BackupSection from './BackupSection.svelte'
 
   const AI_STUDIO_KEY_URL = 'https://aistudio.google.com/apikey'
 
@@ -127,6 +128,8 @@
       {#if error}<span class="error" role="alert">{error}</span>{/if}
     </div>
   </form>
+
+  <BackupSection />
 </main>
 
 <style>

@@ -14,6 +14,8 @@ export interface BookSummary {
   progress: number
   /** 舊資料沒有這欄，視為 epub */
   format?: BookFormat
+  /** 檔案內容 SHA-256（備份時用來辨識不同裝置上的同一本書）；需要時才計算並快取 */
+  hash?: string
 }
 
 // 檔案本體另存一表，列書目時不必把整本書讀進記憶體（iPad 上書多時很重要）
@@ -35,6 +37,7 @@ export type ReaderDb = Dexie & {
   vocab: EntityTable<VocabEntry, 'id'>
 }
 
+// 資料庫名稱沿用改名（TapRead）前的舊名：改掉會讓使用者已存的書與單字本讀不到
 export function createDb(name = 'polyglot-reader'): ReaderDb {
   const db = new Dexie(name) as ReaderDb
   db.version(1).stores({ books: '++id, lastOpenedAt', files: 'id' })

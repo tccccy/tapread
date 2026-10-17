@@ -2,26 +2,24 @@
   import Library from './components/Library.svelte'
   import Reader from './components/Reader.svelte'
   import Settings from './components/Settings.svelte'
-  import VocabHome, { type ReviewMode } from './components/VocabHome.svelte'
+  import VocabHome, { type VocabPlace } from './components/VocabHome.svelte'
   import Review from './components/Review.svelte'
   import UpdateBanner from './components/UpdateBanner.svelte'
 
-  /** 單字本的位置（語言分頁＋書本篩選），從閃卡或書中返回時還原 */
-  type VocabPlace = { language?: string; bookId?: number }
   type ReaderScreen = { name: 'reader'; bookId: number; jumpTo?: string; returnToVocab?: VocabPlace }
 
   type Screen =
     | { name: 'library' }
     | ReaderScreen
     | { name: 'settings'; returnTo: ReaderScreen | null }
-    | ({ name: 'vocab' } & VocabPlace)
-    | { name: 'review'; language: string; bookId: number | undefined; mode: ReviewMode }
+    | { name: 'vocab'; place: VocabPlace }
+    | { name: 'review'; place: VocabPlace; ids: string[] }
 
   let screen = $state<Screen>({ name: 'library' })
 
   const openLibrary = () => (screen = { name: 'library' })
   const openBook = (bookId: number) => (screen = { name: 'reader', bookId })
-  const openVocab = (place: VocabPlace = {}) => (screen = { name: 'vocab', ...place })
+  const openVocab = (place: VocabPlace = {}) => (screen = { name: 'vocab', place })
 </script>
 
 {#if screen.name === 'library'}
@@ -39,16 +37,14 @@
   <Settings onBack={() => (returnTo ? (screen = returnTo) : openLibrary())} />
 {:else if screen.name === 'vocab'}
   <VocabHome
-    initialLanguage={screen.language}
-    initialBookId={screen.bookId}
+    initialPlace={screen.place}
     onBack={openLibrary}
-    onReview={(language, bookId, mode) => (screen = { name: 'review', language, bookId, mode })}
-    onJump={(bookId, cfi, language, filterBookId) =>
-      (screen = { name: 'reader', bookId, jumpTo: cfi, returnToVocab: { language, bookId: filterBookId } })}
+    onReview={(place, ids) => (screen = { name: 'review', place, ids })}
+    onJump={(bookId, cfi, place) => (screen = { name: 'reader', bookId, jumpTo: cfi, returnToVocab: place })}
   />
 {:else}
-  {@const { language, bookId, mode } = screen}
-  <Review {language} {bookId} {mode} onDone={() => openVocab({ language, bookId })} />
+  {@const { place, ids } = screen}
+  <Review language={place.language ?? ''} {ids} preferBookIds={place.filters?.bookIds ?? []} onDone={() => openVocab(place)} />
 {/if}
 
 <UpdateBanner />
