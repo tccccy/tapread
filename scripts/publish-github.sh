@@ -15,19 +15,19 @@ NAME="tcy311"
 
 ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+trap 'rm -rf "${WORK}"' EXIT
 
-echo "→ 複製 $ROOT（不影響原本的 repo）"
-git clone --quiet --no-local --branch main "$ROOT" "$WORK/repo"
-cd "$WORK/repo"
+echo "→ 複製 ${ROOT}（不影響原本的 repo）"
+git clone --quiet --no-local --branch main "${ROOT}" "${WORK}/repo"
+cd "${WORK}/repo"
 
-echo "→ 只保留 $PREFIX/，改用 noreply email，拿掉 AI 署名"
+echo "→ 只保留 ${PREFIX}/，改用 noreply email，拿掉 AI 署名"
 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch \
-  --subdirectory-filter "$PREFIX" \
+  --subdirectory-filter "${PREFIX}" \
   --msg-filter "perl -0777 -pe 's/^co-authored-by:[^\\n]*(?:claude|anthropic)[^\\n]*\\n?//gim; s/\\s+\\z/\\n/'" \
   --env-filter "
-    export GIT_AUTHOR_NAME='$NAME' GIT_AUTHOR_EMAIL='$NOREPLY'
-    export GIT_COMMITTER_NAME='$NAME' GIT_COMMITTER_EMAIL='$NOREPLY'
+    export GIT_AUTHOR_NAME='${NAME}' GIT_AUTHOR_EMAIL='${NOREPLY}'
+    export GIT_COMMITTER_NAME='${NAME}' GIT_COMMITTER_EMAIL='${NOREPLY}'
   " -- main >/dev/null
 
 echo "→ 檢查：歷史中不得出現個人 email 或疑似金鑰"
@@ -48,9 +48,9 @@ if [[ "${1:-}" == "--dry-run" ]]; then
   exit 0
 fi
 
-echo "→ 推送到 $REMOTE"
+echo "→ 推送到 ${REMOTE}"
 if [[ "${1:-}" == "--force" ]]; then
-  git push --force "$REMOTE" main:main
+  git push --force "${REMOTE}" main:main
 else
-  git push "$REMOTE" main:main
+  git push "${REMOTE}" main:main
 fi
