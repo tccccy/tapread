@@ -39,10 +39,10 @@ describe('mergeVocabEntry', () => {
     expect(mergeVocabEntry(local, entry({ level: 4, dueAt: 9, updatedAt: 400 }), map)).toMatchObject({ level: 4, dueAt: 9, updatedAt: 400 })
   })
 
-  it('本機缺的欄位（難度等）由備份補上；不修改傳入物件', () => {
-    const local = entry({ examples: [ex({ bookId: 1 })] })
+  it('本機缺的欄位（詞性、字典釋義）由備份補上；不修改傳入物件', () => {
+    const local = entry({ pos: '', dictMeaning: '', examples: [ex({ bookId: 1 })] })
     const frozen = structuredClone(local)
-    expect(mergeVocabEntry(local, entry({ cefr: 'B1' }), map).cefr).toBe('B1')
+    expect(mergeVocabEntry(local, entry({ pos: '名詞', dictMeaning: '銀行' }), map)).toMatchObject({ pos: '名詞', dictMeaning: '銀行' })
     expect(local).toEqual(frozen)
   })
 })

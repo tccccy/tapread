@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyFilters, facetCounts, activeFilterCount, posGroup, levelBucket, isPolysemous, cefrOf, EMPTY_FILTERS,
+  applyFilters, facetCounts, activeFilterCount, posGroup, levelBucket, isPolysemous, EMPTY_FILTERS,
   type VocabFilters,
 } from '../src/lib/vocab/filters'
 import type { VocabEntry, VocabExample } from '../src/lib/vocab/model'
@@ -18,9 +18,9 @@ const f = (over: Partial<VocabFilters>): VocabFilters => ({ ...EMPTY_FILTERS, ..
 const lemmas = (xs: VocabEntry[]) => xs.map((e) => e.lemma).sort()
 
 const entries = [
-  entry('investigative', { pos: '形容詞', cefr: 'C1', level: 1 }),
-  entry('noncommittal', { pos: '形容詞', cefr: 'C2', level: 3, bookIds: [2], examples: [ex({ bookId: 2, savedAt: NOW - 3 * DAY })] }),
-  entry('run', { pos: '動詞（過去式）', cefr: 'A1', level: 5, examples: [ex({ contextMeaning: '跑' }), ex({ sentence: 's2', contextMeaning: '經營', savedAt: NOW - 40 * DAY })] }),
+  entry('investigative', { pos: '形容詞', level: 1 }),
+  entry('noncommittal', { pos: '形容詞', level: 3, bookIds: [2], examples: [ex({ bookId: 2, savedAt: NOW - 3 * DAY })] }),
+  entry('run', { pos: '動詞（過去式）', level: 5, examples: [ex({ contextMeaning: '跑' }), ex({ sentence: 's2', contextMeaning: '經營', savedAt: NOW - 40 * DAY })] }),
   entry('give up', { pos: '片語動詞', level: 2, examples: [ex({ savedAt: NOW - 20 * DAY })] }),
 ]
 
@@ -44,12 +44,6 @@ describe('分類輔助', () => {
     expect(isPolysemous(entries[2])).toBe(true)
     expect(isPolysemous(entry('x', { examples: [ex(), ex({ sentence: 'b' })] }))).toBe(false)
   })
-
-  it('難度：沒有或不合法時為 unknown', () => {
-    expect(cefrOf(entries[0])).toBe('C1')
-    expect(cefrOf(entries[3])).toBe('unknown')
-    expect(cefrOf(entry('x', { cefr: 'Z9' }))).toBe('unknown')
-  })
 })
 
 describe('applyFilters', () => {
@@ -62,9 +56,7 @@ describe('applyFilters', () => {
     expect(lemmas(applyFilters(entries, f({ levels: ['new', 'learning'], pos: ['adj'] }), NOW))).toEqual(['investigative', 'noncommittal'])
   })
 
-  it('難度與書', () => {
-    expect(lemmas(applyFilters(entries, f({ cefr: ['C1', 'C2'] }), NOW))).toEqual(['investigative', 'noncommittal'])
-    expect(lemmas(applyFilters(entries, f({ cefr: ['unknown'] }), NOW))).toEqual(['give up'])
+  it('依書', () => {
     expect(lemmas(applyFilters(entries, f({ bookIds: [2] }), NOW))).toEqual(['noncommittal'])
   })
 
@@ -98,6 +90,6 @@ describe('facetCounts', () => {
 describe('activeFilterCount', () => {
   it('計算啟用中的篩選數', () => {
     expect(activeFilterCount(EMPTY_FILTERS)).toBe(0)
-    expect(activeFilterCount(f({ levels: ['new'], cefr: ['C1', 'C2'], saved: '7d', polysemous: true }))).toBe(4)
+    expect(activeFilterCount(f({ levels: ['new'], pos: ['adj'], saved: '7d', polysemous: true }))).toBe(4)
   })
 })

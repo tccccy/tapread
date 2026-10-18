@@ -3,13 +3,11 @@ import { MAX_LEVEL, type VocabEntry } from './model'
 
 export type LevelBucket = 'new' | 'learning' | 'known'
 export type PosGroup = 'noun' | 'verb' | 'adj' | 'adv' | 'phrase' | 'other'
-export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | 'unknown'
 export type SavedWithin = 'all' | 'today' | '7d' | '30d'
 
 export interface VocabFilters {
   levels: LevelBucket[]
   pos: PosGroup[]
-  cefr: CefrLevel[]
   bookIds: number[]
   saved: SavedWithin
   polysemous: boolean
@@ -17,12 +15,11 @@ export interface VocabFilters {
 
 // 凍結：多處共用這個預設值，避免被意外修改
 export const EMPTY_FILTERS: VocabFilters = Object.freeze({
-  levels: [], pos: [], cefr: [], bookIds: [], saved: 'all', polysemous: false,
+  levels: [], pos: [], bookIds: [], saved: 'all', polysemous: false,
 }) as VocabFilters
 
 export const LEVEL_BUCKETS: LevelBucket[] = ['new', 'learning', 'known']
 export const POS_GROUPS: PosGroup[] = ['noun', 'verb', 'adj', 'adv', 'phrase', 'other']
-export const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'unknown']
 
 export const levelBucket = (level: number): LevelBucket =>
   level >= MAX_LEVEL ? 'known' : level <= 1 ? 'new' : 'learning'
@@ -36,9 +33,6 @@ const POS_RULES: [PosGroup, RegExp][] = [
   ['adv', /副詞/],
 ]
 export const posGroup = (pos: string): PosGroup => POS_RULES.find(([, re]) => re.test(pos))?.[0] ?? 'other'
-
-const VALID_CEFR = new Set<string>(CEFR_LEVELS.filter((l) => l !== 'unknown'))
-export const cefrOf = (e: VocabEntry): CefrLevel => (e.cefr && VALID_CEFR.has(e.cefr) ? (e.cefr as CefrLevel) : 'unknown')
 
 export const isPolysemous = (e: VocabEntry) =>
   new Set(e.examples.map((x) => x.contextMeaning.trim())).size >= 2
@@ -57,12 +51,11 @@ const savedSince = (saved: SavedWithin, now: number): number => {
   return now - (saved === '7d' ? 7 : 30) * 86_400_000
 }
 
-type Facet = 'levels' | 'pos' | 'cefr' | 'bookIds' | 'saved' | 'polysemous'
+type Facet = 'levels' | 'pos' | 'bookIds' | 'saved' | 'polysemous'
 
 const matches = (e: VocabEntry, f: VocabFilters, now: number, skip?: Facet) =>
   (skip === 'levels' || f.levels.length === 0 || f.levels.includes(levelBucket(e.level))) &&
   (skip === 'pos' || f.pos.length === 0 || f.pos.includes(posGroup(e.pos))) &&
-  (skip === 'cefr' || f.cefr.length === 0 || f.cefr.includes(cefrOf(e))) &&
   (skip === 'bookIds' || f.bookIds.length === 0 || e.bookIds.some((id) => f.bookIds.includes(id))) &&
   (skip === 'saved' || lastSavedAt(e) >= savedSince(f.saved, now)) &&
   (skip === 'polysemous' || !f.polysemous || isPolysemous(e))
@@ -87,7 +80,6 @@ export function facetCounts(entries: VocabEntry[], f: VocabFilters, now: number)
   return {
     levels: countBy(LEVEL_BUCKETS, without('levels'), (e) => levelBucket(e.level)),
     pos: countBy(POS_GROUPS, without('pos'), (e) => posGroup(e.pos)),
-    cefr: countBy(CEFR_LEVELS, without('cefr'), cefrOf),
     books,
     saved: Object.fromEntries(
       (['all', 'today', '7d', '30d'] as SavedWithin[]).map((s) => [s, forSaved.filter((e) => lastSavedAt(e) >= savedSince(s, now)).length]),
@@ -97,4 +89,4 @@ export function facetCounts(entries: VocabEntry[], f: VocabFilters, now: number)
 }
 
 export const activeFilterCount = (f: VocabFilters) =>
-  [f.levels.length, f.pos.length, f.cefr.length, f.bookIds.length, f.saved !== 'all', f.polysemous].filter(Boolean).length
+  [f.levels.length, f.pos.length, f.bookIds.length, f.saved !== 'all', f.polysemous].filter(Boolean).length

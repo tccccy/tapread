@@ -16,7 +16,7 @@ export const hash64 = (s: string) => fnv1a(s) + fnv1a(s, 0x01234567)
 // 釋義由模型、語言、單字與前後文共同決定；書名只是輔助，不納入
 export const definitionCacheKey = (req: DefineRequest, model: string) => {
   const context = [req.before, req.sentence, req.after].join('\u0001')
-  // v2：回傳內容加入 CEFR；改版號讓舊快取（沒有難度）自然失效
+  // v2：快取格式版本（舊版快取裡多的欄位不影響使用）
   return `v2|${model}|${req.language}|${req.word.toLocaleLowerCase()}|${hash64(context)}`
 }
 

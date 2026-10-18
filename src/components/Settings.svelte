@@ -3,6 +3,8 @@
   import { languageLabel, COMMON_LANGUAGES } from '../lib/languageName'
   import { testGeminiKey, aiErrorMessage, AiError } from '../lib/ai/gemini'
   import BackupSection from './BackupSection.svelte'
+  import StorageSection from './StorageSection.svelte'
+  import { loadLastBackup } from '../lib/backup/reminder'
   import { loadAppearance, saveAppearance, applyAppearance, type Appearance } from '../lib/appearance'
 
   const APPEARANCES: { id: Appearance; label: string }[] = [
@@ -11,6 +13,7 @@
     { id: 'dark', label: '深色' },
   ]
   let appearance = $state<Appearance>(loadAppearance(localStorage))
+  let lastBackupAt = $state<number | null>(loadLastBackup(localStorage))
 
   // 外觀點了就生效，不用按「儲存」
   function chooseAppearance(next: Appearance) {
@@ -156,7 +159,8 @@
     </div>
   </form>
 
-  <BackupSection />
+  <StorageSection {lastBackupAt} onBackupNow={() => document.getElementById('backup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+  <BackupSection onExported={() => (lastBackupAt = loadLastBackup(localStorage))} />
 </main>
 
 <style>

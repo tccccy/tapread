@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import {
-    activeFilterCount, facetCounts, EMPTY_FILTERS, LEVEL_BUCKETS, POS_GROUPS, CEFR_LEVELS,
-    type VocabFilters, type LevelBucket, type PosGroup, type CefrLevel, type SavedWithin,
+    activeFilterCount, facetCounts, EMPTY_FILTERS, LEVEL_BUCKETS, POS_GROUPS,
+    type VocabFilters, type LevelBucket, type PosGroup, type SavedWithin,
   } from '../lib/vocab/filters'
   import type { VocabEntry } from '../lib/vocab/model'
 
@@ -16,7 +16,6 @@
 
   const LEVEL_LABELS: Record<LevelBucket, string> = { new: '新字', learning: '學習中', known: '已熟' }
   const POS_LABELS: Record<PosGroup, string> = { noun: '名詞', verb: '動詞', adj: '形容詞', adv: '副詞', phrase: '片語', other: '其他' }
-  const CEFR_LABELS: Record<CefrLevel, string> = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', C1: 'C1', C2: 'C2', unknown: '未分級' }
   const SAVED_LABELS: Record<SavedWithin, string> = { all: '全部', today: '今天', '7d': '最近 7 天', '30d': '最近 30 天' }
 
   let open = $state(false)
@@ -56,15 +55,6 @@
         {/each}
       </div>
 
-      <div class="group">
-        <span class="label">難度</span>
-        {#each CEFR_LEVELS as v (v)}
-          <button class="chip" class:on={filters.cefr.includes(v)} aria-pressed={filters.cefr.includes(v)}
-            class:empty={counts.cefr[v] === 0} onclick={() => set({ cefr: toggle(filters.cefr, v) })}>
-            {CEFR_LABELS[v]} <span class="n">{counts.cefr[v]}</span>
-          </button>
-        {/each}
-      </div>
 
       <div class="group">
         <span class="label">詞性</span>

@@ -14,7 +14,7 @@ const device = () => {
   return { db, lib: createLibrary(db), vocab: createVocabStore(db) }
 }
 const epub = (text: string) => new File([text], 'libro.epub', { type: 'application/epub+zip' })
-const def = (lemma: string, meaning: string) => ({ lemma, pos: '名詞', contextMeaning: meaning, dictMeaning: '', note: '', cefr: 'A2' })
+const def = (lemma: string, meaning: string) => ({ lemma, pos: '名詞', contextMeaning: meaning, dictMeaning: '', note: '' })
 
 async function seed() {
   const a = device()
@@ -37,7 +37,6 @@ describe('備份與還原', () => {
     expect(await (await b.lib.getBook(book.id))!.file.text()).toBe('contenido del libro')
     const word = await b.vocab.get('es|banco')
     expect(word?.examples[0].bookId).toBe(book.id)
-    expect(word?.cefr).toBe('A2')
   })
 
   it('重複匯入同一個備份不會產生重複的書或例句', async () => {

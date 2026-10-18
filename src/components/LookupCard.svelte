@@ -47,7 +47,6 @@
         <span class="meta">
           {#if d.lemma.toLocaleLowerCase() !== card.word.toLocaleLowerCase()}→ {d.lemma}{/if}
           {#if d.pos}<span class="pos">{d.pos}</span>{/if}
-          {#if d.cefr}<span class="pos" title="CEFR 難度">{d.cefr}</span>{/if}
         </span>
       {/if}
     </div>

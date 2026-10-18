@@ -35,8 +35,6 @@ export interface VocabEntry {
   dueAt: number
   createdAt: number
   updatedAt: number
-  /** CEFR 難度（A1–C2）；功能上線前收藏的字沒有 */
-  cefr?: string
 }
 
 export interface SaveInput {
@@ -97,7 +95,6 @@ export function addExample(entry: VocabEntry | undefined, input: SaveInput, now:
     ...(relearn ? { level: 1, dueAt: now } : {}),
     pos: base.pos || d.pos,
     dictMeaning: base.dictMeaning || d.dictMeaning,
-    ...(base.cefr || d.cefr ? { cefr: base.cefr || d.cefr } : {}),
     examples,
     ...derived(examples),
     updatedAt: now,

@@ -70,6 +70,12 @@
     window.scrollTo(0, 0)
   }
 
+  // 書架上的備份提醒：切到設定頁後捲到備份區
+  function openBackup() {
+    selectTab('settings')
+    setTimeout(() => document.getElementById('backup')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
+
   onMount(() => {
     history.replaceState({ tapread: 0 }, '')
     window.addEventListener('popstate', onPopState)
@@ -83,6 +89,7 @@
       onOpenBook={(bookId) => go({ name: 'book', bookId })}
       onRead={(bookId) => go({ name: 'reader', bookId })}
       onOpenSettings={() => selectTab('settings')}
+      onOpenBackup={openBackup}
     />
   {:else if screen.name === 'book'}
     {@const detailId = screen.bookId}

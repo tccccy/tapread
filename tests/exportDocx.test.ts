@@ -24,7 +24,6 @@ const entry = (over: Partial<VocabEntry> = {}): VocabEntry => ({
   dueAt: 0,
   createdAt: 0,
   updatedAt: 0,
-  cefr: 'A2',
   ...over,
 })
 
@@ -38,7 +37,7 @@ describe('buildVocabDocx', () => {
 
   it('包含單字、詞性、意思、書中例句與書名', () => {
     const xml = documentXml(buildVocabDocx([entry()], { title: '西班牙文單字本' }))
-    for (const text of ['西班牙文單字本', 'banco', '名詞', '銀行；長椅', 'A2', '長椅', 'Mi cuento', 'del parque.']) {
+    for (const text of ['西班牙文單字本', 'banco', '名詞', '銀行；長椅', '長椅', 'Mi cuento', 'del parque.']) {
       expect(xml).toContain(text)
     }
   })

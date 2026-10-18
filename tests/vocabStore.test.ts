@@ -5,7 +5,7 @@ import { createVocabStore, type VocabStore } from '../src/lib/vocab/store'
 import type { SaveInput } from '../src/lib/vocab/model'
 
 const NOW = Date.UTC(2026, 9, 17, 6, 0)
-const def = (lemma: string, meaning: string) => ({ lemma, pos: '', contextMeaning: meaning, dictMeaning: '', note: '', cefr: '' })
+const def = (lemma: string, meaning: string) => ({ lemma, pos: '', contextMeaning: meaning, dictMeaning: '', note: '' })
 const input = (over: Partial<SaveInput>): SaveInput => ({
   language: 'es', word: 'banco', sentence: 'S1.', definition: def('banco', '長椅'), bookId: 1, bookTitle: 'A', ...over,
 })

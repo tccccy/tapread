@@ -50,7 +50,7 @@ const cell = (width: number, content: string, fill?: string) =>
   `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : ''}</w:tcPr>${content || paragraph('')}</w:tc>`
 
 function entryRow(entry: VocabEntry): string {
-  const word = paragraph(run(entry.lemma, { bold: true, size: 24 }) + (entry.cefr ? run(`  ${entry.cefr}`, { color: '725B48', size: 16 }) : ''))
+  const word = paragraph(run(entry.lemma, { bold: true, size: 24 }))
   const contents = [
     word,
     paragraph(run(entry.pos)),

@@ -68,7 +68,6 @@ export function parseManifest(text: string): BackupManifest {
 // ---- 備份內容不可信：逐欄驗證，不合格的整筆略過（避免壞資料寫進資料庫、讓畫面打不開）----
 const MAX_TEXT = 2000
 const BOOK_FORMATS: BookFormat[] = ['epub', 'pdf', 'docx', 'txt']
-const CEFR = /^(A1|A2|B1|B2|C1|C2)$/
 const BOOK_FILE_PATH = /^books\/\d+\.(epub|pdf|docx|txt)$/
 
 type Raw = Record<string, unknown>
@@ -133,13 +132,11 @@ export function sanitizeVocabEntry(raw: unknown): VocabEntry | null {
   const examples = o.examples.map(sanitizeExample).filter((x): x is VocabExample => x !== null)
   if (examples.length === 0) return null
   const language = str(o.language)
-  const cefr = str(o.cefr)
   return {
     id: vocabId(language, lemma), language, lemma, pos: str(o.pos), dictMeaning: str(o.dictMeaning),
     forms: unique(examples.map((x) => x.word.toLocaleLowerCase())),
     bookIds: unique(examples.map((x) => x.bookId)),
     examples, level, dueAt, createdAt, updatedAt,
-    ...(CEFR.test(cefr) ? { cefr } : {}),
   }
 }
 
@@ -192,7 +189,6 @@ export function mergeVocabEntry(local: VocabEntry | undefined, incoming: VocabEn
     ...base,
     pos: local?.pos || incoming.pos,
     dictMeaning: local?.dictMeaning || incoming.dictMeaning,
-    ...(local?.cefr || incoming.cefr ? { cefr: local?.cefr || incoming.cefr } : {}),
     examples,
     forms: unique(examples.map((x) => x.word.toLocaleLowerCase())),
     bookIds: unique(examples.map((x) => x.bookId)),

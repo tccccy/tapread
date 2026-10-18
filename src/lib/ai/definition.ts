@@ -14,8 +14,6 @@ export interface Definition {
   contextMeaning: string
   dictMeaning: string
   note: string
-  /** CEFR 難度 A1–C2；人名、罕見字等無法分級時為空字串 */
-  cefr: string
 }
 
 export class DefinitionParseError extends Error {
@@ -23,7 +21,6 @@ export class DefinitionParseError extends Error {
 }
 
 const MAX_FIELD_CHARS = 400
-const CEFR = /^(A1|A2|B1|B2|C1|C2)$/
 
 // Gemini responseSchema（OpenAPI 子集）
 export const DEFINITION_SCHEMA = {
@@ -34,9 +31,8 @@ export const DEFINITION_SCHEMA = {
     context_meaning: { type: 'STRING' },
     dict_meaning: { type: 'STRING' },
     note: { type: 'STRING' },
-    cefr: { type: 'STRING', enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'unknown'] },
   },
-  required: ['lemma', 'pos', 'context_meaning', 'dict_meaning', 'note', 'cefr'],
+  required: ['lemma', 'pos', 'context_meaning', 'dict_meaning', 'note'],
 } as const
 
 const languageName = (code: string) => {
@@ -75,7 +71,6 @@ export function buildDefinePrompt(req: DefineRequest): string {
     '- context_meaning: the meaning in THIS sentence, in Traditional Chinese (Taiwan), at most 30 characters.',
     '- dict_meaning: up to 3 main dictionary senses in Traditional Chinese, separated by "；".',
     '- note: a brief Traditional Chinese note if useful (e.g. conjugated form and tense, idiom, false friend); otherwise an empty string.',
-    '- cefr: the CEFR level (A1–C2) of this word in the sense used here, for learners of the language; "unknown" for proper names or when it cannot be graded.',
   ].join('\n')
 }
 
@@ -110,6 +105,5 @@ export function parseDefinition(raw: unknown): Definition {
     contextMeaning: field(obj, 'context_meaning', true),
     dictMeaning: field(obj, 'dict_meaning', false),
     note: field(obj, 'note', false),
-    cefr: ((v) => (CEFR.test(v) ? v : ''))(field(obj, 'cefr', false).toUpperCase()),
   }
 }

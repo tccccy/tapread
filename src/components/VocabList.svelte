@@ -66,7 +66,6 @@
             <summary>
               <span class="lemma">{e.lemma}</span>
               {#if e.pos}<span class="pos">{e.pos}</span>{/if}
-              {#if e.cefr}<span class="pos cefr">{e.cefr}</span>{/if}
               <span class="gist">{e.examples[0]?.contextMeaning ?? e.dictMeaning}</span>
               <span class="level" title={`熟練度 ${e.level}/${MAX_LEVEL}`} aria-label={`熟練度 ${e.level}/${MAX_LEVEL}`}>
                 {#if e.level >= MAX_LEVEL}已熟{:else}{'●'.repeat(e.level)}{'○'.repeat(MAX_LEVEL - 1 - e.level)}{/if}
@@ -117,7 +116,6 @@
   summary::-webkit-details-marker { display: none; }
   .lemma { font-weight: 700; font-size: 1.1rem; }
   .pos { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; }
-  .cefr { color: var(--accent-ink); border-color: var(--accent); }
   .gist { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .level { font-size: 0.75rem; color: var(--accent-ink); letter-spacing: 1px; white-space: nowrap; }
   .detail { padding: 0 14px 14px; border-top: 1px solid var(--border); }

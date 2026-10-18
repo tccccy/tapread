@@ -88,7 +88,7 @@ export function createVocabStore(db: ReaderDb): VocabStore {
           if (moving.length === 0) continue
           for (const x of moving) {
             const target = await db.vocab.get(vocabId(to, entry.lemma))
-            const definition = { lemma: entry.lemma, pos: entry.pos, contextMeaning: x.contextMeaning, dictMeaning: entry.dictMeaning, note: x.note, cefr: entry.cefr ?? '' }
+            const definition = { lemma: entry.lemma, pos: entry.pos, contextMeaning: x.contextMeaning, dictMeaning: entry.dictMeaning, note: x.note }
             await db.vocab.put(addExample(target, { language: to, word: x.word, sentence: x.sentence, definition, bookId, bookTitle: x.bookTitle, cfi: x.cfi }, now))
           }
           // 從舊語言的字移除搬走的例句；沒有例句了就整個刪掉

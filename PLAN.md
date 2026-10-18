@@ -207,6 +207,11 @@ PWA 閱讀器（靜態網站）
 - 「在手機、平板上使用」改為裝置分頁（iPhone／iPad／Android／電腦），各自有示意圖（標出要點的按鈕）＋3 步，`HomeScreenGuide.svelte`
 - 功能改動時記得同步更新教學內容與截圖
 
+### 儲存空間、備份提醒、移除難度分級（2026-10-18）
+- 設定頁「儲存空間」：使用量（navigator.storage.estimate）、書／單字／書摘數、持久保存狀態（可按鈕申請）、上次備份日期（`StorageSection.svelte`）
+- 備份提醒：匯出成功時記錄時間（localStorage `tapread.lastBackupAt`）；超過 14 天沒備份、或加入第一本書 3 天後還沒備份過，書架首頁顯示提醒卡片（前往備份／稍後提醒 3 天）（`src/lib/backup/reminder.ts`）
+- 移除難度分級（CEFR）：不再請 AI 判斷，查字卡片、單字清單、篩選、匯出 Word 都拿掉；舊資料裡的難度欄位留在資料庫但不再使用，匯入備份時忽略
+
 ### 下一步
 - 自動同步到使用者自己的 Google 雲端硬碟（需在 Google Cloud 建 OAuth 用戶端；測試階段要逐一加入使用者的 Gmail）
 - P3：詞形還原（收藏 abrir 後，書中 abre、abrió 也上色）

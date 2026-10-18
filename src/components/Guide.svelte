@@ -85,11 +85,11 @@
     <summary><span class="icon" aria-hidden="true">👆</span>點字查詢與收藏</summary>
     <div class="body">
       <p class="lead">這是 TapRead 最主要的功能：讀到不懂的字，直接點它。</p>
-      <GuideShot src="lookup.jpg" height={1169} alt="閱讀頁點了 abrió 之後，下方出現查字卡片：原形 abrir、動詞、A1、此句意思「打開（窗戶）」" caption="點了「abrió」：卡片顯示原形、詞性、難度與此句意思" />
+      <GuideShot src="lookup.jpg" height={1167} alt="閱讀頁點了 abrió 之後，下方出現查字卡片：原形 abrir、動詞、此句意思「打開（窗戶）」" caption="點了「abrió」：卡片顯示原形、詞性與此句意思" />
       <h3>查字卡片上有什麼</h3>
       <ul>
         <li><strong>單字與原形</strong>：例如點到 <em>abrió</em>，會顯示「→ abrir」。</li>
-        <li><strong>詞性與難度</strong>：例如「動詞」「B1」（CEFR 難度，A1 最簡單、C2 最難）。</li>
+        <li><strong>詞性</strong>：例如「動詞」「名詞」「片語動詞」。</li>
         <li><strong>此句意思</strong>：這個字在<strong>這一句</strong>裡的中文意思，不是字典上的第一個解釋。</li>
         <li><strong>字典釋義</strong>：最常見的幾個意思。</li>
         <li><strong>補充</strong>：動詞時態、慣用語、容易誤會的地方。</li>
@@ -146,7 +146,6 @@
       <h3>篩選</h3>
       <ul>
         <li><strong>熟練度</strong>：新字、學習中、已熟。</li>
-        <li><strong>難度</strong>：A1–C2、未分級。</li>
         <li><strong>詞性</strong>：名詞、動詞、形容詞、副詞、片語、其他。</li>
         <li><strong>收藏時間</strong>：今天、最近 7 天、最近 30 天。</li>
         <li><strong>書</strong>：只看某幾本書收藏的字。</li>
@@ -167,7 +166,7 @@
         <li>「移除這句」只刪一個例句；「移除整個字」把字從單字本刪掉。</li>
       </ul>
       <h3>匯出 Word</h3>
-      <p>單字本的「<strong>匯出 Word</strong>」會把目前篩選出的字做成 Word 表格：單字、難度、詞性、意思、書中例句（單字以粗體標出）、此句意思與書名。可以列印、分享或交作業用。</p>
+      <p>單字本的「<strong>匯出 Word</strong>」會把目前篩選出的字做成 Word 表格：單字、詞性、意思、書中例句（單字以粗體標出）、此句意思與書名。可以列印、分享或交作業用。</p>
     </div>
   </details>
 
@@ -341,6 +340,12 @@
         <li>兩邊的資料<strong>合併</strong>，不會覆蓋或重複。</li>
         <li>閱讀進度取讀得比較新的；評分、心得取最後修改的；單字、例句、書摘合在一起；閱讀時間同一天取較多的。</li>
         <li>自訂書架以名稱對應，沒有的會自動建立。</li>
+      </ul>
+      <h3>儲存空間與備份提醒</h3>
+      <ul>
+        <li>「設定 → 儲存空間」可以看到用了多少空間、有幾本書和單字、是否開啟「持久保存」，以及上次備份的日期。</li>
+        <li><strong>持久保存</strong>：開啟後，裝置空間不足時瀏覽器不會自動清掉資料。顯示「未開啟」時可以按「申請持久保存」（加入主畫面、常常使用之後比較容易被同意）。</li>
+        <li><strong>備份提醒</strong>：超過 14 天沒備份（或加入第一本書 3 天後還沒備份過），書架首頁會出現提醒，可以直接「前往備份」或「稍後提醒」（3 天後再提醒）。</li>
       </ul>
       <p class="note">備份不含 Gemini 金鑰，在新裝置要重新貼上。建議定期匯出一份備份存在雲端硬碟。</p>
     </div>

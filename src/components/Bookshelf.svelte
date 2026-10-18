@@ -11,14 +11,17 @@
   import { saveCoverOnImport } from '../lib/books/covers'
   import BookCover from './BookCover.svelte'
   import ReadingStatsCard from './ReadingStatsCard.svelte'
+  import { backupReminder, loadLastBackup, loadSnooze, snoozeReminder } from '../lib/backup/reminder'
   import PasteText from './PasteText.svelte'
 
-  let { onOpenBook, onRead, onOpenSettings }: {
+  let { onOpenBook, onRead, onOpenSettings, onOpenBackup }: {
     /** 書的頁面（評分、評語） */
     onOpenBook: (id: number) => void
     /** 直接打開閱讀 */
     onRead: (id: number) => void
     onOpenSettings: () => void
+    /** 前往設定頁的備份區 */
+    onOpenBackup: () => void
   } = $props()
 
   const shelfStore = createShelfStore(db)
@@ -43,6 +46,19 @@
   let fileInput: HTMLInputElement
 
   const hero = $derived(continueReading(books))
+
+  // 太久沒備份時在書架上提醒（依最早加入的書計算；按「稍後提醒」會暫停幾天）
+  let snoozedUntil = $state(loadSnooze(localStorage))
+  const reminder = $derived(backupReminder({
+    now: Date.now(),
+    lastBackupAt: loadLastBackup(localStorage),
+    firstDataAt: books.length > 0 ? Math.min(...books.map((b) => b.addedAt)) : null,
+    snoozedUntil,
+  }))
+  function snooze() {
+    snoozeReminder(localStorage, Date.now())
+    snoozedUntil = loadSnooze(localStorage)
+  }
   const groups = $derived(groupBooks(books, mode, shelves))
 
   function loadMode(): GroupMode {
@@ -215,6 +231,19 @@
 
   {#if error}<p class="error" role="alert">{error}</p>{/if}
 
+  {#if reminder.show}
+    <section class="reminder glass" aria-label="備份提醒">
+      <p>
+        <strong>{reminder.daysSince === null ? '還沒備份過' : `已經 ${reminder.daysSince} 天沒備份了`}</strong>
+        換手機、清除瀏覽器資料時，備份能把書和單字找回來。
+      </p>
+      <div class="reminder-actions">
+        <button class="primary" onclick={onOpenBackup}>前往備份</button>
+        <button onclick={snooze}>稍後提醒</button>
+      </div>
+    </section>
+  {/if}
+
   {#if hero}
     <section class="hero glass" aria-label="繼續閱讀">
       <button class="hero-cover" onclick={() => onOpenBook(hero.id)} aria-label={`${hero.title} 的頁面`}>
@@ -309,6 +338,10 @@
   }
   main.dragging { outline: 3px dashed var(--accent); outline-offset: -10px; border-radius: var(--radius-lg); }
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .reminder { padding: 14px 18px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .reminder p { margin: 0; line-height: 1.6; flex: 1 1 260px; }
+  .reminder strong { display: block; }
+  .reminder-actions { display: flex; gap: 8px; }
   .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 4px 0 14px; }
   /* 觸控裝置沒辦法拖檔案，不顯示這句 */

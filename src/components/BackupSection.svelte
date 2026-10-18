@@ -2,6 +2,9 @@
   import type { ImportSummary } from '../lib/backup/backup'
   import { db } from '../lib/db'
   import { saveFile, isShareCancel } from '../lib/saveFile'
+  import { recordBackup } from '../lib/backup/reminder'
+
+  let { onExported }: { onExported?: () => void } = $props()
 
   let busy = $state<'export' | 'import' | null>(null)
   let message = $state('')
@@ -26,6 +29,9 @@
       const file = new File([data as Uint8Array<ArrayBuffer>], name, { type: 'application/zip' })
       await saveFile(file, 'TapRead 備份')
       message = `已匯出 ${name}（${formatSize(file.size)}）。`
+      // 記下備份時間，供儲存空間與書架上的備份提醒使用
+      recordBackup(localStorage, Date.now())
+      onExported?.()
     } catch (e) {
       // 使用者在分享選單按取消，不算錯誤
       if (isShareCancel(e)) return
@@ -75,7 +81,7 @@
   }
 </script>
 
-<section>
+<section id="backup">
   <h2>備份與同步</h2>
   <p class="muted">
     把書、閱讀進度與單字本匯出成一個檔案，到另一台裝置（電腦、平板、手機）匯入即可接續。
