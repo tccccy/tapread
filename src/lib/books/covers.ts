@@ -39,7 +39,7 @@ async function thumbnail(blob: Blob): Promise<Blob | null> {
 
 /** 從書檔取出封面縮圖；Word 或沒有封面時回傳 null */
 export async function extractCover(file: Blob, format: BookFormat, title: string): Promise<Blob | null> {
-  if (format === 'docx') return null
+  if (format === 'docx' || format === 'txt') return null
   const book = await loadBook(file, format, { fileName: `${title}.${format}`, title, language: '' })
   try {
     const cover = await (book as { getCover?: () => Promise<Blob | null> | Blob | null }).getCover?.()

@@ -103,10 +103,11 @@ export function createLibrary(dbOrName: ReaderDb | string = defaultDb): Library 
     },
 
     deleteBook: (id) =>
-      db.transaction('rw', db.books, db.files, db.covers, async () => {
+      db.transaction('rw', [db.books, db.files, db.covers, db.highlights], async () => {
         await db.books.delete(id)
         await db.files.delete(id)
         await db.covers.delete(id)
+        await db.highlights.where('bookId').equals(id).delete()
       }),
 
     debugTableCounts: async () => ({ books: await db.books.count(), files: await db.files.count() }),

@@ -11,12 +11,15 @@
   import type { VocabPlace } from './VocabHome.svelte'
   import BookCover from './BookCover.svelte'
   import StarRating from './StarRating.svelte'
+  import QuoteList from './QuoteList.svelte'
 
-  let { bookId, onBack, onRead, onOpenVocab }: {
+  let { bookId, onBack, onRead, onOpenVocab, onJump }: {
     bookId: number
     onBack: () => void
     onRead: (id: number) => void
     onOpenVocab: (place: VocabPlace) => void
+    /** 從書摘回到書中某個位置 */
+    onJump: (cfi: string) => void
   } = $props()
 
   const shelfStore = createShelfStore(db)
@@ -231,6 +234,8 @@
         <p class="hint">閱讀時點字、按「☆ 收藏」，單字就會出現在這裡。</p>
       {/if}
     </section>
+
+    <QuoteList {bookId} {onJump} />
 
     <section class="card glass details">
       <h2>資訊</h2>

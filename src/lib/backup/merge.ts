@@ -1,6 +1,6 @@
 // 備份的格式與合併規則（純函式）。跨裝置時同一本書在兩邊的 id 不同，以檔案內容的雜湊對應
 import type { BookFormat } from '../bookFile'
-import type { ReadingDay } from '../db'
+import type { Highlight, ReadingDay } from '../db'
 import { MAX_LEVEL, vocabId, type VocabEntry, type VocabExample } from '../vocab/model'
 
 export const BACKUP_APP = 'tapread'
@@ -41,6 +41,8 @@ export interface BackupManifest {
   vocab: VocabEntry[]
   /** 每天的閱讀時間；舊版備份沒有 */
   readingDays?: ReadingDay[]
+  /** 書摘（bookId 為備份中的書號）；舊版備份沒有 */
+  highlights?: Highlight[]
 }
 
 export class BackupFormatError extends Error {
@@ -65,9 +67,9 @@ export function parseManifest(text: string): BackupManifest {
 
 // ---- 備份內容不可信：逐欄驗證，不合格的整筆略過（避免壞資料寫進資料庫、讓畫面打不開）----
 const MAX_TEXT = 2000
-const BOOK_FORMATS: BookFormat[] = ['epub', 'pdf', 'docx']
+const BOOK_FORMATS: BookFormat[] = ['epub', 'pdf', 'docx', 'txt']
 const CEFR = /^(A1|A2|B1|B2|C1|C2)$/
-const BOOK_FILE_PATH = /^books\/\d+\.(epub|pdf|docx)$/
+const BOOK_FILE_PATH = /^books\/\d+\.(epub|pdf|docx|txt)$/
 
 type Raw = Record<string, unknown>
 const asObj = (v: unknown): Raw | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Raw) : null)
@@ -96,6 +98,22 @@ export function sanitizeReadingDay(raw: unknown): ReadingDay | null {
   const seconds = int(o?.seconds)
   if (!o || typeof o.date !== 'string' || !DATE.test(o.date) || seconds === null || seconds < 0 || seconds > SECONDS_PER_DAY) return null
   return { date: o.date, seconds }
+}
+
+const ID = /^[\w-]{1,64}$/
+
+export function sanitizeHighlight(raw: unknown): Highlight | null {
+  const o = asObj(raw)
+  const bookId = int(o?.bookId)
+  const createdAt = num(o?.createdAt)
+  if (!o || typeof o.id !== 'string' || !ID.test(o.id) || bookId === null || createdAt === null) return null
+  const cfi = str(o.cfi)
+  const text = str(o.text)
+  if (!cfi || !text) return null
+  return {
+    id: o.id, bookId, cfi, text, note: str(o.note), chapter: str(o.chapter).slice(0, 200),
+    createdAt, updatedAt: num(o.updatedAt) ?? createdAt,
+  }
 }
 
 /** 同一天取較多的那一份：重複匯入同一個備份不會讓時間加倍 */

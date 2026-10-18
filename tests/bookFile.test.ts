@@ -68,6 +68,7 @@ describe('bookFormat', () => {
     expect(bookFormat('a.EPUB')).toBe('epub')
     expect(bookFormat('a.pdf')).toBe('pdf')
     expect(bookFormat('a.docx')).toBe('docx')
-    expect(bookFormat('a.txt')).toBeNull()
+    expect(bookFormat('a.txt')).toBe('txt')
+    expect(bookFormat('a.mobi')).toBeNull()
   })
 })

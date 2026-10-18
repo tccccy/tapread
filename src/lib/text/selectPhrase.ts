@@ -1,30 +1,37 @@
-// 在書頁上拖曳選取幾個字 → 片語＋所在句子，給「查詢片語」用
+// 在書頁上拖曳選取 → 片語（查詢）或整句（翻譯）＋所在句子
 import { buildTextIndex, offsetOf, rangeFor } from './textIndex'
 import { sentenceContext, type SentenceContext } from './wordContext'
 
 export const MAX_PHRASE_WORDS = 8
 const MAX_PHRASE_CHARS = 80
+/** 超過片語長度就當成整句翻譯；再長（選了好幾段）就不處理 */
+export const MAX_SELECTION_CHARS = 600
 const LETTER = /[\p{L}\p{M}]/u
 const BLOCK_SELECTOR = 'p,li,blockquote,dd,dt,td,th,h1,h2,h3,h4,h5,h6,figcaption,pre,div,section,article,body'
 
-export interface PhraseHit { word: string; start: number; end: number }
+export type SelectionKind = 'phrase' | 'sentence'
 
-/** 去掉選取範圍前後的標點與空白、合併中間的空白；選太長（整段）或沒有字母時回傳 null */
+export interface PhraseHit { word: string; start: number; end: number; kind: SelectionKind }
+
+/** 去掉選取範圍前後的標點與空白、合併中間的空白；選太長或沒有字母時回傳 null */
 export function phraseAt(text: string, start: number, end: number, locale?: string): PhraseHit | null {
   let s = Math.max(0, start)
   let e = Math.min(text.length, end)
   while (s < e && !LETTER.test(text[s])) s++
-  while (e > s && !LETTER.test(text[e - 1])) e--
+  // 整句時保留句尾標點（翻譯需要語氣）；片語時再去掉
+  while (e > s && /\s/.test(text[e - 1])) e--
   if (s >= e) return null
-  const word = text.slice(s, e).replace(/\s+/g, ' ')
-  if (word.length > MAX_PHRASE_CHARS) return null
+  const raw = text.slice(s, e).replace(/\s+/g, ' ')
+  if (raw.length > MAX_SELECTION_CHARS) return null
   let words = 0
   try {
-    for (const seg of new Intl.Segmenter(locale || undefined, { granularity: 'word' }).segment(word)) if (seg.isWordLike) words++
+    for (const seg of new Intl.Segmenter(locale || undefined, { granularity: 'word' }).segment(raw)) if (seg.isWordLike) words++
   } catch {
-    words = word.split(' ').length
+    words = raw.split(' ').length
   }
-  return words > MAX_PHRASE_WORDS ? null : { word, start: s, end: e }
+  if (words > MAX_PHRASE_WORDS || raw.length > MAX_PHRASE_CHARS) return { word: raw, start: s, end: e, kind: 'sentence' }
+  while (e > s && !LETTER.test(text[e - 1])) e--
+  return { word: text.slice(s, e).replace(/\s+/g, ' '), start: s, end: e, kind: 'phrase' }
 }
 
 /** 選取的端點若落在元素上（例如三連點選整段），換成相鄰的文字節點位置 */
@@ -47,6 +54,7 @@ function textPoint(container: Node, offset: number, atEnd: boolean): { node: Nod
 export interface SelectedPhrase extends SentenceContext {
   word: string
   range: Range
+  kind: SelectionKind
 }
 
 /** 讀取目前的選取；不在同一個段落內、選太長或沒有選取時回傳 null */
@@ -65,5 +73,5 @@ export function selectionToLookup(doc: Document, language: string): SelectedPhra
   const hit = phraseAt(index.text, start, end, language)
   const range = hit && rangeFor(index, hit.start, hit.end)
   if (!hit || !range) return null
-  return { word: hit.word, range, ...sentenceContext(index.text, hit.start, language) }
+  return { word: hit.word, range, kind: hit.kind, ...sentenceContext(index.text, hit.start, language) }
 }

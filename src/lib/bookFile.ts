@@ -1,4 +1,4 @@
-export type BookFormat = 'epub' | 'pdf' | 'docx'
+export type BookFormat = 'epub' | 'pdf' | 'docx' | 'txt'
 export type BookFileError = 'unsupported-type' | 'empty' | 'too-large' | 'corrupt' | 'legacy-doc'
 export type BookFileCheck = { ok: true } | { ok: false; reason: BookFileError }
 
@@ -12,6 +12,8 @@ const FORMATS: Record<BookFormat, { ext: string; magic: number[] }> = {
   epub: { ext: '.epub', magic: ZIP_MAGIC },
   pdf: { ext: '.pdf', magic: PDF_MAGIC },
   docx: { ext: '.docx', magic: ZIP_MAGIC },
+  // 純文字沒有檔頭可驗證
+  txt: { ext: '.txt', magic: [] },
 }
 
 /** 給檔案選擇器的 accept 值 */
@@ -43,7 +45,7 @@ export async function checkBookFile(
 }
 
 const MESSAGES: Record<BookFileError, string> = {
-  'unsupported-type': '目前支援 EPUB、PDF 與 Word（.docx）。',
+  'unsupported-type': '目前支援 EPUB、PDF、Word（.docx）與純文字（.txt）。',
   empty: '這個檔案是空的。',
   'too-large': '檔案太大（上限 200 MB）。',
   corrupt: '這個檔案的內容和副檔名不符，可能已損壞。',

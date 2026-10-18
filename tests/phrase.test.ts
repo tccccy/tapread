@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { phraseAt, selectionToLookup, MAX_PHRASE_WORDS } from '../src/lib/text/selectPhrase'
+import { phraseAt, selectionToLookup, MAX_PHRASE_WORDS, MAX_SELECTION_CHARS } from '../src/lib/text/selectPhrase'
 import { findPhraseMatches, isPhrase } from '../src/lib/text/phraseMatch'
 import { buildDefinePrompt } from '../src/lib/ai/definition'
 
@@ -10,7 +10,7 @@ describe('phraseAt', () => {
   it('去掉選取範圍前後的標點與空白', () => {
     const start = text.indexOf(', se') // 多選了逗號與空白
     const end = text.indexOf(' de') + 1
-    expect(phraseAt(text, start, end, 'es')).toEqual({ word: 'se dio cuenta', start: start + 2, end: end - 1 })
+    expect(phraseAt(text, start, end, 'es')).toEqual({ word: 'se dio cuenta', start: start + 2, end: end - 1, kind: 'phrase' })
   })
 
   it('多個空白與換行合成一個空格', () => {
@@ -22,9 +22,14 @@ describe('phraseAt', () => {
     expect(phraseAt('… 123 …', 0, 9, 'en')).toBeNull()
   })
 
-  it(`超過 ${MAX_PHRASE_WORDS} 個字視為選了一整段，不查`, () => {
-    const long = 'one two three four five six seven eight nine'
-    expect(phraseAt(long, 0, long.length, 'en')).toBeNull()
+  it(`超過 ${MAX_PHRASE_WORDS} 個字視為整句（翻譯），保留句尾標點`, () => {
+    const long = 'One two three four five six seven eight nine.'
+    expect(phraseAt(long, 0, long.length, 'en')).toMatchObject({ word: long, kind: 'sentence' })
+  })
+
+  it(`超過 ${MAX_SELECTION_CHARS} 字（選了好幾段）不處理`, () => {
+    const huge = 'palabra '.repeat(100)
+    expect(phraseAt(huge, 0, huge.length, 'es')).toBeNull()
   })
 })
 

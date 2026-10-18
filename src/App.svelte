@@ -77,11 +77,13 @@
       onOpenSettings={() => selectTab('settings')}
     />
   {:else if screen.name === 'book'}
+    {@const detailId = screen.bookId}
     <BookDetail
-      bookId={screen.bookId}
+      bookId={detailId}
       onBack={back}
       onRead={(bookId) => go({ name: 'reader', bookId })}
       onOpenVocab={(place) => go({ name: 'vocab', place })}
+      onJump={(cfi) => go({ name: 'reader', bookId: detailId, jumpTo: cfi })}
     />
   {:else if screen.name === 'reader'}
     <Reader

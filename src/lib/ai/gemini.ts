@@ -1,5 +1,6 @@
 import { parseQuotaError, quotaMessage, type QuotaInfo } from './quota'
-import { buildDefinePrompt, parseDefinition, DefinitionParseError, DEFINITION_SCHEMA, type DefineRequest, type Definition } from './definition'
+import { buildDefinePrompt, parseDefinition, DEFINITION_SCHEMA, type DefineRequest, type Definition } from './definition'
+import { buildTranslatePrompt, parseTranslation, TRANSLATION_SCHEMA, type TranslateRequest, type Translation } from './translate'
 
 export type AiErrorKind =
   | 'no-key' | 'auth' | 'model' | 'quota' | 'server' | 'bad-request'
@@ -64,10 +65,11 @@ interface GenerateResponse {
 // 包一層箭頭函式：直接傳 window.fetch 在某些呼叫方式下會 Illegal invocation
 const defaultFetch = (url: string, init?: RequestInit) => fetch(url, init)
 
-export function createGeminiDefiner({ apiKey, model, fetchImpl = defaultFetch, timeoutMs = 20_000 }: GeminiOptions) {
+/** 送出一段提示、要求依 schema 回傳 JSON，再交給 parse 驗證；字詞查詢與整句翻譯共用 */
+function createGeminiJson({ apiKey, model, fetchImpl = defaultFetch, timeoutMs = 20_000 }: GeminiOptions) {
   const key = apiKey.trim()
 
-  async function callOnce(req: DefineRequest, signal?: AbortSignal): Promise<Definition> {
+  async function callOnce<T>(prompt: string, schema: object, parse: (text: string) => T, signal?: AbortSignal): Promise<T> {
     if (signal?.aborted) throw new AiError('aborted', '查詢已取消')
     // 不用 AbortSignal.any：iPad Safari 17.4 以前沒有
     const controller = new AbortController()
@@ -81,10 +83,10 @@ export function createGeminiDefiner({ apiKey, model, fetchImpl = defaultFetch, t
         // 金鑰放標頭，不放網址
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: buildDefinePrompt(req) }] }],
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: 'application/json',
-            responseSchema: DEFINITION_SCHEMA,
+            responseSchema: schema,
             temperature: 0.2,
           },
         }),
@@ -110,23 +112,34 @@ export function createGeminiDefiner({ apiKey, model, fetchImpl = defaultFetch, t
     }
     const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
     try {
-      return parseDefinition(text)
+      return parse(text)
     } catch (e) {
-      if (e instanceof DefinitionParseError) throw new AiError('bad-response', e.message, { cause: e })
-      throw e
+      throw new AiError('bad-response', e instanceof Error ? e.message : 'AI 回應格式有誤', { cause: e })
     }
   }
 
-  return async function define(req: DefineRequest, signal?: AbortSignal): Promise<Definition> {
+  return async function generate<T>(prompt: string, schema: object, parse: (text: string) => T, signal?: AbortSignal): Promise<T> {
     if (!key) throw new AiError('no-key', '未設定 Gemini API 金鑰')
     try {
-      return await callOnce(req, signal)
+      return await callOnce(prompt, schema, parse, signal)
     } catch (e) {
       // 模型偶爾回錯格式，重試一次即可
-      if (e instanceof AiError && e.kind === 'bad-response') return callOnce(req, signal)
+      if (e instanceof AiError && e.kind === 'bad-response') return callOnce(prompt, schema, parse, signal)
       throw e
     }
   }
+}
+
+export function createGeminiDefiner(options: GeminiOptions) {
+  const generate = createGeminiJson(options)
+  return (req: DefineRequest, signal?: AbortSignal): Promise<Definition> =>
+    generate(buildDefinePrompt(req), DEFINITION_SCHEMA, parseDefinition, signal)
+}
+
+export function createGeminiTranslator(options: GeminiOptions) {
+  const generate = createGeminiJson(options)
+  return (req: TranslateRequest, signal?: AbortSignal): Promise<Translation> =>
+    generate(buildTranslatePrompt(req), TRANSLATION_SCHEMA, parseTranslation, signal)
 }
 
 /** 確認金鑰與模型可用：查詢模型資訊，不產生內容、不消耗額度 */

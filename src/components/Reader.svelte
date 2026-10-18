@@ -7,7 +7,11 @@
   import { loadSettings } from '../lib/settings'
   import { createLookup } from '../lib/lookup'
   import { createDefinitionCache } from '../lib/definitionCache'
-  import { createGeminiDefiner, aiErrorMessage, AiError } from '../lib/ai/gemini'
+  import { createGeminiDefiner, createGeminiTranslator, aiErrorMessage, AiError } from '../lib/ai/gemini'
+  import { translationCacheKey, type TranslateRequest, type Translation } from '../lib/ai/translate'
+  import { createHighlightStore } from '../lib/books/highlights'
+  import { setQuoteHighlights } from '../lib/text/quoteHighlight'
+  import type { Highlight } from '../lib/db'
   import { tapToWord } from '../lib/text/tapToWord'
   import { setLookupHighlight } from '../lib/text/domHit'
   import { applyVocabHighlights } from '../lib/text/vocabHighlight'
@@ -16,10 +20,13 @@
   import type { Definition } from '../lib/ai/definition'
   import LookupCard, { type CardState } from './LookupCard.svelte'
   import ReadingSettings from './ReadingSettings.svelte'
+  import TocPanel from './TocPanel.svelte'
+  import { flattenToc, type TocEntry } from '../lib/reading/toc'
   import { loadReadingPrefs, saveReadingPrefs, bookCss, webFamiliesOf, WIDTHS, type ReadingPrefs } from '../lib/reading/prefs'
   import { loadWebFonts, fontFaceCss } from '../lib/reading/fonts'
   import { loadAppearance, bookTheme } from '../lib/appearance'
   import { createActivityClock } from '../lib/stats/readingStats'
+  import { stopSpeaking } from '../lib/speech'
   import { addReadingTime } from '../lib/stats/readingLog'
 
   let { bookId, jumpTo, backLabel = '書架', onClose, onOpenSettings }: {
@@ -45,6 +52,11 @@
   // 「Aa」閱讀設定；PDF 是固定版面，只能換紙張色
   let prefs = $state<ReadingPrefs>(loadReadingPrefs(localStorage))
   let showPrefs = $state(false)
+  let showToc = $state(false)
+  let toc = $state<TocEntry[]>([])
+  let chapterHref = $state<string | undefined>(undefined)
+  // 拖曳進度條時先顯示預覽的百分比，放開才跳轉
+  let seeking = $state<number | null>(null)
   let fixedLayout = $state(false)
   let prefsSeq = 0
   let prefsTimer: ReturnType<typeof setTimeout> | undefined
@@ -63,6 +75,27 @@
     define: createGeminiDefiner({ apiKey: settings.geminiApiKey, model: settings.geminiModel }),
     model: settings.geminiModel,
   })
+  const translator = createGeminiTranslator({ apiKey: settings.geminiApiKey, model: settings.geminiModel })
+  // 同一句翻過就存起來，不重複花額度
+  async function translate(req: TranslateRequest, signal: AbortSignal): Promise<Translation> {
+    const key = translationCacheKey(req, settings.geminiModel)
+    const hit = await db.translations.get(key).catch(() => undefined)
+    if (hit) return hit.translation
+    const translation = await translator(req, signal)
+    await db.translations.put({ key, translation, createdAt: Date.now() }).catch((e) => console.warn('寫入翻譯快取失敗', e))
+    return translation
+  }
+
+  const highlightStore = createHighlightStore(db)
+  let quotes: Highlight[] = []
+  let toast = $state('')
+  let toastTimer: ReturnType<typeof setTimeout> | undefined
+  function showToast(message: string) {
+    toast = message
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => (toast = ''), 2200)
+  }
+
   let lookupSeq = 0
   // 連點多個字時取消前一個請求，避免浪費免費額度
   let lookupController: AbortController | null = null
@@ -84,6 +117,7 @@
   }
 
   function closeCard() {
+    stopSpeaking()
     pendingJump = null
     cancelLookup()
     card = null
@@ -144,9 +178,10 @@
 
   async function onBookClick(doc: Document, e: MouseEvent) {
     markActive()
-    // 設定面板開著時，點書本只是關掉面板
-    if (showPrefs) {
+    // 設定或目錄面板開著時，點書本只是關掉面板
+    if (showPrefs || showToc) {
       showPrefs = false
+      showToc = false
       return
     }
     const target = e.target as Element | null
@@ -174,6 +209,27 @@
     }, 400)
   }
 
+  async function goToChapter(href: string) {
+    showToc = false
+    closeCard()
+    try {
+      await view?.goTo(href)
+    } catch (err) {
+      console.warn('跳到章節失敗', err)
+    }
+  }
+
+  async function seekTo(fraction: number) {
+    closeCard()
+    try {
+      await view?.goToFraction(fraction)
+    } catch (err) {
+      console.warn('跳到進度失敗', err)
+    } finally {
+      seeking = null
+    }
+  }
+
   async function lookupSelection() {
     const target = selected
     if (!target) return
@@ -181,10 +237,84 @@
     // 清掉系統的選取（iPad 的拷貝選單），改用查詢標示
     target.doc.getSelection()?.removeAllRanges()
     showPrefs = false
-    await lookupTarget(target.doc, target.phrase)
+    if (target.phrase.kind === 'sentence') await translateTarget(target.doc, target.phrase)
+    else await lookupTarget(target.doc, target.phrase)
   }
 
-  async function lookupTarget(doc: Document, tapped: SelectedPhrase) {
+  // 書頁上的劃線：找出這一頁（章節）裡的書摘位置並標示
+  function applyQuotes(doc: Document) {
+    const index = docIndex.get(doc) ?? view?.renderer.getContents?.().find((c) => c.doc === doc)?.index
+    if (!view || index === undefined) return
+    const ranges: Range[] = []
+    for (const q of quotes) {
+      try {
+        const target = view.resolveNavigation(q.cfi)
+        const range = target?.index === index ? target.anchor?.(doc) : null
+        if (range) ranges.push(range)
+      } catch {
+        // 位置算不出來（書被改過等）就不標示，書摘本身仍保留
+      }
+    }
+    setQuoteHighlights(doc, ranges)
+  }
+
+  async function addHighlight(doc: Document, range: Range, text: string) {
+    const cfi = cfiOf(doc, range)
+    if (!cfi) {
+      showToast('這個位置無法劃線')
+      return
+    }
+    try {
+      await highlightStore.add({ bookId, cfi, text, chapter })
+      quotes = await highlightStore.listByBook(bookId)
+      for (const d of loadedDocs()) applyQuotes(d)
+      showToast('已劃線，可到書的頁面查看書摘')
+    } catch (err) {
+      console.error('劃線失敗', err)
+      showToast('劃線失敗，請再試一次')
+    }
+  }
+
+  async function highlightSelection() {
+    const target = selected
+    if (!target) return
+    selected = null
+    target.doc.getSelection()?.removeAllRanges()
+    await addHighlight(target.doc, target.phrase.range, target.phrase.range.toString())
+  }
+
+  // 翻譯卡片上的「劃線」用
+  let translatedTarget: { doc: Document; range: Range; text: string } | null = null
+
+  async function translateTarget(doc: Document, target: SelectedPhrase) {
+    if (highlightedDoc && highlightedDoc !== doc) setLookupHighlight(highlightedDoc, null)
+    setLookupHighlight(doc, target.range)
+    highlightedDoc = doc
+    cancelLookup()
+    const seq = lookupSeq
+    const controller = new AbortController()
+    lookupController = controller
+    translatedTarget = { doc, range: target.range, text: target.range.toString() }
+    card = { status: 'loading', word: target.word }
+    try {
+      const translation = await translate({
+        text: target.word, before: target.before, after: target.after, language, bookTitle: title,
+      }, controller.signal)
+      if (seq !== lookupSeq) return
+      card = { status: 'translated', word: target.word, translation }
+    } catch (err) {
+      if (seq !== lookupSeq) return
+      console.error('翻譯失敗', err)
+      card = {
+        status: 'error',
+        word: target.word,
+        message: aiErrorMessage(err),
+        needsSettings: err instanceof AiError && SETTINGS_ERRORS.includes(err.kind),
+      }
+    }
+  }
+
+  async function lookupTarget(doc: Document, tapped: Omit<SelectedPhrase, 'kind'>) {
     if (highlightedDoc && highlightedDoc !== doc) setLookupHighlight(highlightedDoc, null)
     setLookupHighlight(doc, tapped.range)
     highlightedDoc = doc
@@ -210,7 +340,7 @@
       })
       if (seq !== lookupSeq) return
       current = { word: tapped.word, sentence: tapped.sentence, definition, savedId: found?.id ?? null, cfi: cfiOf(doc, tapped.range) }
-      card = { status: 'done', word: tapped.word, definition, saved: !!found }
+      card = { status: 'done', word: tapped.word, definition, saved: !!found, sentence: tapped.sentence }
     } catch (err) {
       if (seq !== lookupSeq) return
       console.error('查詞失敗', err)
@@ -289,7 +419,10 @@
     markActive()
     // 在設定面板的滑桿上按方向鍵是調字級，不是翻頁
     const typing = (e.target as Element | null)?.closest?.('input, textarea, select')
-    if (e.key === 'Escape' && showPrefs) showPrefs = false
+    if (e.key === 'Escape' && (showPrefs || showToc)) {
+      showPrefs = false
+      showToc = false
+    }
     else if (e.key === 'Escape') closeCard()
     else if (typing) return
     else if (e.key === 'ArrowLeft') view?.goLeft()
@@ -303,6 +436,7 @@
     if (!Number.isFinite(detail.fraction)) return
     progress = detail.fraction
     chapter = detail.tocItem?.label ?? ''
+    chapterHref = detail.tocItem?.href
     if (peek) return
     library.saveLocation(bookId, { cfi: detail.cfi, progress }).catch((err) => {
       console.error('儲存閱讀位置失敗', err)
@@ -327,6 +461,7 @@
       win.requestAnimationFrame(() => {
         scheduled = false
         applyVocabHighlights(doc, vocabLevels, language)
+        applyQuotes(doc)
         if (pendingJump && docIndex.get(doc) === view?.resolveNavigation(pendingJump)?.index) highlightCfi(pendingJump)
       })
     }).observe(doc.body, { childList: true, subtree: true })
@@ -344,6 +479,7 @@
     doc.addEventListener('click', (ev) => onBookClick(doc, ev))
     doc.addEventListener('selectionchange', () => onSelectionChange(doc))
     applyVocabHighlights(doc, vocabLevels, language)
+    applyQuotes(doc)
   }
 
   onMount(() => {
@@ -356,6 +492,10 @@
         if (cancelled) return
         title = book.title
         language = book.language
+        quotes = await highlightStore.listByBook(bookId).catch((err) => {
+          console.warn('讀取書摘失敗', err)
+          return []
+        })
         vocabLevels = await vocab.formLevels(language).catch((err) => {
           console.error('讀取單字本失敗', err)
           return new Map<string, number>()
@@ -376,6 +516,7 @@
         if (cancelled) return
         await v.open(openedBook)
         if (cancelled) return
+        toc = flattenToc(v.book.toc)
         v.renderer.addEventListener('relocate', onRendererRelocate)
         const start = jumpTo ?? book.lastCfi
         await v.init(start ? { lastLocation: start } : { showTextStart: true })
@@ -400,6 +541,7 @@
       cancelled = true
       clearTimeout(prefsTimer)
       clearTimeout(selectionTimer)
+      clearTimeout(toastTimer)
       cancelLookup()
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('visibilitychange', onVisibility)
@@ -421,29 +563,60 @@
       <span class="title">{title}</span>
       {#if chapter}<span class="chapter">{chapter}</span>{/if}
     </div>
-    <span class="progress">{Math.round(progress * 100)}%</span>
-    <button class="aa" class:active={showPrefs} onclick={() => (showPrefs = !showPrefs)} aria-label="閱讀設定" aria-expanded={showPrefs}>Aa</button>
+    <button class="icon" class:active={showToc} onclick={() => { showToc = !showToc; showPrefs = false }} aria-label="目錄" aria-expanded={showToc}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h11" /></svg>
+    </button>
+    <button class="aa" class:active={showPrefs} onclick={() => { showPrefs = !showPrefs; showToc = false }} aria-label="閱讀設定" aria-expanded={showPrefs}>Aa</button>
   </header>
-  {#if peek}<p class="peek-note">從單字本開啟：可以自由翻閱，不會改變你的閱讀進度。</p>{/if}
+  {#if peek}<p class="peek-note">跳到收藏的位置：可以自由翻閱，不會改變你的閱讀進度。</p>{/if}
 
   <div class="stage">
     <div class="view-host" bind:this={container}></div>
     {#if loading}<p class="status">載入中…</p>{/if}
     {#if error}<p class="status error" role="alert">{error}</p>{/if}
     {#if selected}
-      <button class="phrase primary" onclick={lookupSelection}>
-        查詢「{selected.phrase.word.length > 24 ? `${selected.phrase.word.slice(0, 24)}…` : selected.phrase.word}」
-      </button>
+      {@const w = selected.phrase.word}
+      <div class="selection-actions">
+        <button class="primary" onclick={lookupSelection}>
+          {selected.phrase.kind === 'sentence' ? '翻譯' : '查詢'}「{w.length > 20 ? `${w.slice(0, 20)}…` : w}」
+        </button>
+        <button onclick={highlightSelection}>劃線</button>
+      </div>
     {/if}
-    {#if card}<LookupCard {card} onClose={closeCard} {onOpenSettings} onToggleSave={toggleSave} />{/if}
+    {#if toast}<p class="toast" role="status">{toast}</p>{/if}
+    {#if card}<LookupCard
+      {card}
+      {language}
+      onClose={closeCard}
+      {onOpenSettings}
+      onToggleSave={toggleSave}
+      onHighlight={() => translatedTarget && addHighlight(translatedTarget.doc, translatedTarget.range, translatedTarget.text)}
+    />{/if}
   </div>
+  {#if showToc}
+    <TocPanel entries={toc} currentHref={chapterHref} onClose={() => (showToc = false)} onSelect={goToChapter} />
+  {/if}
   {#if showPrefs}
     <ReadingSettings {prefs} {language} {fixedLayout} onChange={changePrefs} onClose={() => (showPrefs = false)} />
   {/if}
 
   <footer>
-    <button onclick={() => view?.goLeft()} aria-label="上一頁">‹ 上一頁</button>
-    <button onclick={() => view?.goRight()} aria-label="下一頁">下一頁 ›</button>
+    <button class="turn" onclick={() => view?.goLeft()} aria-label="上一頁">‹</button>
+    <label class="seek">
+      <input
+        type="range"
+        min="0"
+        max="1000"
+        step="1"
+        value={Math.round((seeking ?? progress) * 1000)}
+        oninput={(e) => (seeking = Number(e.currentTarget.value) / 1000)}
+        onchange={(e) => seekTo(Number(e.currentTarget.value) / 1000)}
+        aria-label="閱讀進度"
+        aria-valuetext={`${Math.round((seeking ?? progress) * 100)}%`}
+      />
+      <span class="seek-label">{Math.round((seeking ?? progress) * 100)}%{chapter && seeking === null ? `・${chapter}` : ''}</span>
+    </label>
+    <button class="turn" onclick={() => view?.goRight()} aria-label="下一頁">›</button>
   </footer>
 </div>
 
@@ -467,17 +640,31 @@
   }
   footer { justify-content: space-between; }
   .title { font-family: var(--font-serif); }
-  .phrase {
-    /* 不用 transform 置中：按鈕按下時的縮放動畫也用 transform，會互相蓋掉 */
+  /* 不用 transform 置中：按鈕按下時的縮放動畫也用 transform，會互相蓋掉 */
+  .selection-actions, .toast {
     position: absolute; z-index: 12; top: 10px; left: 0; right: 0; margin: 0 auto; width: fit-content;
-    max-width: calc(100% - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: calc(100% - 32px);
+  }
+  .selection-actions { display: flex; gap: 8px; }
+  .selection-actions button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .selection-actions button:last-child { flex-shrink: 0; }
+  .toast {
+    top: auto; bottom: 16px; padding: 8px 16px; border-radius: 999px; font-size: 0.9rem;
+    background: var(--surface-strong); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
   }
   .aa { font-family: var(--font-serif); font-size: 1.05rem; padding: 0.3rem 0.9rem; }
   .aa.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
   .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .title, .chapter { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .title { font-weight: 600; }
-  .chapter, .progress { color: var(--muted); font-size: 0.85rem; }
+  .chapter { color: var(--muted); font-size: 0.85rem; }
+  .icon { width: 44px; padding: 0; display: grid; place-items: center; }
+  .icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+  .icon.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+  .turn { width: 48px; padding: 0; font-size: 1.4rem; line-height: 1; }
+  .seek { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
+  .seek input { width: 100%; accent-color: var(--accent); padding: 0; border: none; background: none; margin: 0; }
+  .seek-label { font-size: 0.78rem; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stage { flex: 1; min-height: 0; position: relative; }
   .view-host { position: absolute; inset: 0; }
   .view-host :global(foliate-view) { display: block; width: 100%; height: 100%; }

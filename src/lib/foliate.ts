@@ -1,18 +1,21 @@
 // foliate-js 的薄型別包裝；原始碼固定於 vendor/foliate-js（見 vendor/README.md）
 import { makeBook as rawMakeBook } from '../../vendor/foliate-js/view.js'
 import type { RawMetadata } from './metadata'
+import type { RawTocItem } from './reading/toc'
 import { LOOKUP_HIGHLIGHT_CSS } from './text/domHit'
 import { VOCAB_HIGHLIGHT_CSS } from './text/vocabHighlight'
+import { QUOTE_HIGHLIGHT_CSS } from './text/quoteHighlight'
 
 export interface FoliateBook {
   metadata?: RawMetadata
   dir?: string
+  toc?: RawTocItem[]
 }
 
 export interface RelocateDetail {
   fraction: number
   cfi: string
-  tocItem?: { label?: string }
+  tocItem?: { label?: string; href?: string }
 }
 
 export interface FoliateRenderer extends HTMLElement {
@@ -28,6 +31,8 @@ export interface FoliateView extends HTMLElement {
   init(opts: { lastLocation?: string | null; showTextStart?: boolean }): Promise<void>
   getCFI(index: number, range?: Range): string
   resolveNavigation(target: string): { index: number; anchor?: (doc: Document) => Range | null } | undefined
+  goTo(target: string): Promise<unknown>
+  goToFraction(fraction: number): Promise<void>
   goLeft(): Promise<void>
   goRight(): Promise<void>
   close(): void
@@ -44,6 +49,6 @@ export function ensureHighlightStyle(doc: Document) {
   if (doc.getElementById(HIGHLIGHT_STYLE_ID)) return
   const style = doc.createElement('style')
   style.id = HIGHLIGHT_STYLE_ID
-  style.textContent = `${VOCAB_HIGHLIGHT_CSS}\n${LOOKUP_HIGHLIGHT_CSS}`
+  style.textContent = `${QUOTE_HIGHLIGHT_CSS}\n${VOCAB_HIGHLIGHT_CSS}\n${LOOKUP_HIGHLIGHT_CSS}`
   ;(doc.head ?? doc.documentElement).append(style)
 }

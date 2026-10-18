@@ -148,6 +148,19 @@ describe('備份與還原', () => {
     expect(await b.db.readingDays.get('2026-10-18')).toEqual({ date: '2026-10-18', seconds: 300 })
   })
 
+  it('書摘跟著書搬過去（書號自動對應），重複匯入不會重複', async () => {
+    const { a, bookId } = await seed()
+    await a.db.highlights.add({ id: 'h1', bookId, cfi: 'epubcfi(/6/4!/4/2)', text: 'Una frase bonita.', note: '喜歡', chapter: 'Cap 1', createdAt: 1, updatedAt: 1 })
+    const data = await exportBackup(a.db, { includeBooks: true })
+    const b = device()
+    await importBackup(b.db, data)
+    await importBackup(b.db, data)
+    const [book] = await b.lib.listBooks()
+    const list = await b.db.highlights.toArray()
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ bookId: book.id, text: 'Una frase bonita.', note: '喜歡' })
+  })
+
   it('閱讀紀錄格式不正確的略過', async () => {
     const manifest = { app: 'tapread', version: 1, exportedAt: 0, books: [], vocab: [],
       readingDays: [{ date: '2026-10-18', seconds: 60 }, { date: 'x', seconds: 1 }, { date: '2026-10-19', seconds: 999999 }] }

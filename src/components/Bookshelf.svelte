@@ -11,6 +11,7 @@
   import { saveCoverOnImport } from '../lib/books/covers'
   import BookCover from './BookCover.svelte'
   import ReadingStatsCard from './ReadingStatsCard.svelte'
+  import PasteText from './PasteText.svelte'
 
   let { onOpenBook, onRead, onOpenSettings }: {
     /** 書的頁面（評分、評語） */
@@ -106,6 +107,28 @@
     }
   }
 
+  let pasting = $state(false)
+
+  // 貼上的文章存成 .txt，之後和一般的書一樣：記進度、收藏單字、備份
+  async function importText({ title, language, text }: { title: string; language: string; text: string }) {
+    if (busy) return
+    busy = true
+    error = ''
+    try {
+      const file = new File([text], `${title}.txt`, { type: 'text/plain;charset=utf-8' })
+      const id = await library.addBook({ title, author: '', language, format: 'txt', file })
+      requestPersistentStorage().catch((e) => console.warn('無法要求持久儲存', e))
+      pasting = false
+      onRead(id)
+    } catch (e) {
+      console.error('貼上文章失敗', e)
+      error = isQuotaError(e) ? '裝置儲存空間不足，請先移除一些書。' : '無法儲存這篇文章，請再試一次。'
+      pasting = false
+    } finally {
+      busy = false
+    }
+  }
+
   function onPick(e: Event) {
     const input = e.currentTarget as HTMLInputElement
     const file = input.files?.[0]
@@ -168,10 +191,14 @@
     </div>
     <!-- 不設 accept：iOS 對 .epub 的 accept 支援不一，改由 checkBookFile 驗證 -->
     <input bind:this={fileInput} type="file" hidden onchange={onPick} />
-    <button class="primary add" disabled={busy} onclick={() => fileInput.click()} aria-label="匯入檔案">
-      {busy ? '匯入中…' : '＋ 匯入'}
-    </button>
+    <div class="header-actions">
+      <button class="add" disabled={busy} onclick={() => (pasting = true)}>貼上文章</button>
+      <button class="primary add" disabled={busy} onclick={() => fileInput.click()} aria-label="匯入檔案">
+        {busy ? '匯入中…' : '＋ 匯入'}
+      </button>
+    </div>
   </header>
+  {#if pasting}<PasteText {busy} onSubmit={importText} onCancel={() => (pasting = false)} />{/if}
 
   {#if needsKey}
     <section class="welcome glass" aria-labelledby="welcome-title">
@@ -179,7 +206,7 @@
       <p>讀外文時點一下不懂的字，就會看到它在這一句裡的中文意思，還能收藏起來複習。</p>
       <ol>
         <li><strong>設定 Gemini 金鑰</strong>：免費，約 2 分鐘，點字查詢需要它</li>
-        <li><strong>匯入一本書</strong>：EPUB、PDF 或 Word（.docx）</li>
+        <li><strong>匯入一本書</strong>：EPUB、PDF、Word（.docx）、純文字，或直接貼上文章</li>
       </ol>
       <button class="primary" onclick={onOpenSettings}>設定金鑰</button>
       <p class="small">你的書、單字本與金鑰都只存在這台裝置，不會上傳到任何伺服器。</p>
@@ -211,7 +238,7 @@
   {#if loaded && books.length === 0}
     <section class="empty glass">
       <p class="big">書架是空的</p>
-      <p class="muted">點右上角「＋ 匯入」選檔，或把檔案拖進這個視窗。<br />支援 EPUB、PDF、Word（.docx）。檔案只會存在這台裝置。</p>
+      <p class="muted">點右上角「＋ 匯入」選檔，或把檔案拖進這個視窗。<br />支援 EPUB、PDF、Word（.docx）、純文字（.txt），也可以按「貼上文章」。檔案只會存在這台裝置。</p>
     </section>
   {:else if books.length > 0}
     <div class="modes glass" role="radiogroup" aria-label="書架分類方式">
@@ -275,6 +302,7 @@
   }
   main.dragging { outline: 3px dashed var(--accent); outline-offset: -10px; border-radius: var(--radius-lg); }
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   h1 { font-size: 2rem; margin: 0.2rem 0 0; }
   .sub { margin: 4px 0 0; color: var(--muted); }
   .add { white-space: nowrap; }
