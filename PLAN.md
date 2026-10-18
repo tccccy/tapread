@@ -1,7 +1,7 @@
 # TapRead（多語言 AI 閱讀器，PWA 版）開發計畫
 
 > 建立日期：2026-10-17
-> 狀態：已上線 https://tcy311.github.io/tapread/ （P0、P1、P2、P4 完成），下一步 P3
+> 狀態：已上線 https://tccccy.github.io/tapread/ （P0、P1、P2、P4 完成），下一步 P3
 > 前一版（LUTE + Ollama 本機版）已封存於 `docs/archive-lute-plan.md`
 
 ---
@@ -134,8 +134,8 @@ PWA 閱讀器（靜態網站）
 - PWA 改為 prompt 模式：有新版本時底部提示「更新」；每小時與切回 App 時檢查更新
 
 ### 部署（完成，2026-10-17）
-- 網址：https://tcy311.github.io/tapread/（2026-10-17 由 polyglot-reader 改名為 TapRead）
-- Repo：https://github.com/tcy311/tapread（公開；只含閱讀器，作者 email 為 GitHub noreply）
+- 網址：https://tccccy.github.io/tapread/（2026-10-17 由 polyglot-reader 改名為 TapRead）
+- Repo：https://github.com/tccccy/tapread（公開；只含閱讀器，作者 email 為 GitHub noreply）
 - 開發仍在本機 `專案/閱讀器/`（上層 `專案/` repo）；發布用 `scripts/publish-github.sh`：
   抽出 `閱讀器/` 歷史 → email 改 noreply → 檢查無個人 email／金鑰 → 推到 GitHub main
   （改寫結果固定，每次只會接上新 commit；可先加 `--dry-run` 檢查）

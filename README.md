@@ -1,6 +1,6 @@
 # TapRead
 
-網址：https://tcy311.github.io/tapread/
+網址：https://tccccy.github.io/tapread/
 
 讀外文書時，點一下不懂的字，就會看到它**在這一句裡**的中文意思；想記住的字可以收藏進單字本，用閃卡複習。
 
