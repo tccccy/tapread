@@ -8,6 +8,7 @@
   import Review from './components/Review.svelte'
   import UpdateBanner from './components/UpdateBanner.svelte'
   import TabBar, { type Tab } from './components/TabBar.svelte'
+  import Guide from './components/Guide.svelte'
 
   type Screen =
     | { name: 'shelf' }
@@ -15,6 +16,7 @@
     | { name: 'reader'; bookId: number; jumpTo?: string }
     /** fromReader：從閱讀頁進來（有返回鍵、不顯示分頁列） */
     | { name: 'settings'; fromReader?: boolean }
+    | { name: 'guide' }
     | { name: 'vocab'; place: VocabPlace }
     | { name: 'review'; place: VocabPlace; ids: string[] }
 
@@ -24,7 +26,7 @@
   let screen = $state<Screen>({ name: 'shelf' })
   let stack = $state<Entry[]>([])
 
-  const TAB_OF: Partial<Record<Screen['name'], Tab>> = { shelf: 'shelf', book: 'shelf', vocab: 'vocab', settings: 'settings' }
+  const TAB_OF: Partial<Record<Screen['name'], Tab>> = { shelf: 'shelf', book: 'shelf', vocab: 'vocab', guide: 'guide', settings: 'settings' }
   const activeTab = $derived(screen.name === 'settings' && screen.fromReader ? null : TAB_OF[screen.name] ?? null)
   const BACK_LABEL: Partial<Record<Screen['name'], string>> = { shelf: '書架', book: '這本書', vocab: '單字本' }
   const backLabel = $derived(BACK_LABEL[stack.at(-1)?.screen.name ?? 'shelf'] ?? '返回')
@@ -58,7 +60,13 @@
   function selectTab(tab: Tab) {
     stack = []
     history.replaceState({ tapread: 0 }, '')
-    screen = tab === 'shelf' ? { name: 'shelf' } : tab === 'vocab' ? { name: 'vocab', place: {} } : { name: 'settings' }
+    const SCREENS: Record<Tab, Screen> = {
+      shelf: { name: 'shelf' },
+      vocab: { name: 'vocab', place: {} },
+      guide: { name: 'guide' },
+      settings: { name: 'settings' },
+    }
+    screen = SCREENS[tab]
     window.scrollTo(0, 0)
   }
 
@@ -93,6 +101,8 @@
       onClose={back}
       onOpenSettings={() => go({ name: 'settings', fromReader: true })}
     />
+  {:else if screen.name === 'guide'}
+    <Guide onGo={selectTab} />
   {:else if screen.name === 'settings'}
     <Settings onBack={screen.fromReader ? back : undefined} />
   {:else if screen.name === 'vocab'}
