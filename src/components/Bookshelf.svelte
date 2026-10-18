@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { library, requestPersistentStorage, isQuotaError, type BookSummary } from '../lib/library'
-  import { checkBookFile, bookFileErrorMessage, bookFormat } from '../lib/bookFile'
+  import { checkBookFile, bookFileErrorMessage, bookFormat, ACCEPTED_EXTENSIONS } from '../lib/bookFile'
   import { loadBook } from '../lib/openBook'
   import { normalizeMetadata } from '../lib/metadata'
   import { loadSettings } from '../lib/settings'
@@ -189,8 +189,8 @@
       <h1>我的書架</h1>
       <p class="sub">{books.length > 0 ? `共 ${books.length} 本書` : '把想讀的外文書放上來'}</p>
     </div>
-    <!-- 不設 accept：iOS 對 .epub 的 accept 支援不一，改由 checkBookFile 驗證 -->
-    <input bind:this={fileInput} type="file" hidden onchange={onPick} />
+    <!-- 限定書的檔案類型，手機才會直接打開「檔案」而不是照片；選到的檔案仍由 checkBookFile 驗證 -->
+    <input bind:this={fileInput} type="file" accept={ACCEPTED_EXTENSIONS} hidden onchange={onPick} />
     <div class="header-actions">
       <button class="add" disabled={busy} onclick={() => (pasting = true)}>貼上文章</button>
       <button class="primary add" disabled={busy} onclick={() => fileInput.click()} aria-label="匯入檔案">
@@ -238,7 +238,14 @@
   {#if loaded && books.length === 0}
     <section class="empty glass">
       <p class="big">書架是空的</p>
-      <p class="muted">點右上角「＋ 匯入」選檔，或把檔案拖進這個視窗。<br />支援 EPUB、PDF、Word（.docx）、純文字（.txt），也可以按「貼上文章」。檔案只會存在這台裝置。</p>
+      <div class="empty-actions">
+        <button class="primary" disabled={busy} onclick={() => fileInput.click()}>選擇檔案匯入</button>
+        <button disabled={busy} onclick={() => (pasting = true)}>貼上文章</button>
+      </div>
+      <p class="muted">
+        支援 EPUB、PDF、Word（.docx）、純文字（.txt）。<span class="drag-hint">也可以直接把檔案拖進這個視窗。</span><br />
+        手機、平板：書要先存在「檔案」App 裡（例如 iCloud Drive、下載項目）。檔案只會存在這台裝置。
+      </p>
     </section>
   {:else if books.length > 0}
     <div class="modes glass" role="radiogroup" aria-label="書架分類方式">
@@ -303,6 +310,9 @@
   main.dragging { outline: 3px dashed var(--accent); outline-offset: -10px; border-radius: var(--radius-lg); }
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
   .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 4px 0 14px; }
+  /* 觸控裝置沒辦法拖檔案，不顯示這句 */
+  @media (hover: none) { .drag-hint { display: none; } }
   h1 { font-size: 2rem; margin: 0.2rem 0 0; }
   .sub { margin: 4px 0 0; color: var(--muted); }
   .add { white-space: nowrap; }

@@ -8,16 +8,19 @@ const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04]
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d] // %PDF-
 
 // 每種格式的副檔名與檔頭特徵（EPUB 與 .docx 都是 zip）
-const FORMATS: Record<BookFormat, { ext: string; magic: number[] }> = {
-  epub: { ext: '.epub', magic: ZIP_MAGIC },
-  pdf: { ext: '.pdf', magic: PDF_MAGIC },
-  docx: { ext: '.docx', magic: ZIP_MAGIC },
+const FORMATS: Record<BookFormat, { ext: string; mime: string; magic: number[] }> = {
+  epub: { ext: '.epub', mime: 'application/epub+zip', magic: ZIP_MAGIC },
+  pdf: { ext: '.pdf', mime: 'application/pdf', magic: PDF_MAGIC },
+  docx: { ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', magic: ZIP_MAGIC },
   // 純文字沒有檔頭可驗證
-  txt: { ext: '.txt', magic: [] },
+  txt: { ext: '.txt', mime: 'text/plain', magic: [] },
 }
 
-/** 給檔案選擇器的 accept 值 */
-export const ACCEPTED_EXTENSIONS = Object.values(FORMATS).map((f) => f.ext).join(',')
+/**
+ * 給檔案選擇器的 accept 值：副檔名＋MIME 都列，iOS 才認得 EPUB。
+ * 有設 accept，iPhone 會直接打開「檔案」，不會出現「照片圖庫／拍照」
+ */
+export const ACCEPTED_EXTENSIONS = Object.values(FORMATS).flatMap((f) => [f.ext, f.mime]).join(',')
 
 export function bookFormat(fileName: string): BookFormat | null {
   const name = fileName.toLowerCase()

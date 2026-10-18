@@ -87,7 +87,7 @@
       {busy === 'export' ? '匯出中…' : '匯出（含書檔）'}
     </button>
     <button disabled={busy !== null} onclick={() => exportTo(false)}>匯出（只有單字與進度）</button>
-    <input bind:this={fileInput} type="file" hidden onchange={onPick} />
+    <input bind:this={fileInput} type="file" accept=".zip,application/zip" hidden onchange={onPick} />
     <button disabled={busy !== null} onclick={() => fileInput.click()}>
       {busy === 'import' ? '匯入中…' : '匯入備份檔'}
     </button>
