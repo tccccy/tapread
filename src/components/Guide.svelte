@@ -370,7 +370,7 @@
     <summary><span class="icon" aria-hidden="true">？</span>常見問題</summary>
     <div class="body">
       <h3>點字後顯示「金鑰無效」</h3>
-      <p>到設定確認金鑰有完整複製（以 AIza 開頭），再按「測試並儲存」。</p>
+      <p>到設定按「顯示」確認整串金鑰都有貼上（前後沒有多或少字），再按「測試並儲存」。也可以回 Google AI Studio 重新複製一次。</p>
       <h3>顯示「已達使用額度上限」</h3>
       <p>Gemini 免費方案每分鐘、每天有次數限制。稍等一下再試，或隔天額度會重置。</p>
       <h3>PDF 點了沒反應</h3>

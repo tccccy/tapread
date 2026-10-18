@@ -26,7 +26,7 @@
 
   // 已經在設定頁，不需要再叫使用者「到設定」
   const TEST_MESSAGES: Partial<Record<string, string>> = {
-    auth: 'Google 回覆這把金鑰無效。請確認有完整複製（以 AIza 開頭），或回 AI Studio 重新建立一把。',
+    auth: 'Google 回覆這把金鑰無效。請確認整串都有複製到（前後沒有多或少字），或回 AI Studio 重新建立一把。',
     model: '金鑰沒問題，但找不到這個模型名稱。清空「模型」欄位會改回預設值。',
   }
 
@@ -108,7 +108,7 @@
       <h2>Gemini API 金鑰</h2>
       <ol class="steps">
         <li>打開 <a href={AI_STUDIO_KEY_URL} target="_blank" rel="noopener noreferrer">Google AI Studio 金鑰頁面</a>，用 Google 帳號登入</li>
-        <li>按「Create API key」（建立 API 金鑰），複製那串以 <code>AIza</code> 開頭的文字</li>
+        <li>按「Create API key」（建立 API 金鑰），按旁邊的複製按鈕，把整串金鑰複製起來</li>
         <li>貼到下面，按「測試並儲存」</li>
       </ol>
       <p class="muted">免費申請。金鑰只存在這台裝置的瀏覽器，不會傳給 Gemini 以外的地方。免費方案送出的內容可能被 Google 用來改善產品。</p>
@@ -191,7 +191,6 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 10px;
   }
   .steps { margin: 0 0 8px; padding-left: 22px; line-height: 1.7; }
-  .steps code { font-size: 0.9em; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
   .test { margin-top: 10px; width: 100%; }
   .muted { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: 0 0 8px; }
   a { color: var(--accent-ink); }
