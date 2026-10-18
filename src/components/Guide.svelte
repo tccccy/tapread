@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Tab } from './TabBar.svelte'
+  import GuideShot from './GuideShot.svelte'
+  import HomeScreenGuide from './HomeScreenGuide.svelte'
 
   let { onGo }: { onGo: (tab: Tab) => void } = $props()
 
@@ -83,6 +85,7 @@
     <summary><span class="icon" aria-hidden="true">👆</span>點字查詢與收藏</summary>
     <div class="body">
       <p class="lead">這是 TapRead 最主要的功能：讀到不懂的字，直接點它。</p>
+      <GuideShot src="lookup.jpg" height={1169} alt="閱讀頁點了 abrió 之後，下方出現查字卡片：原形 abrir、動詞、A1、此句意思「打開（窗戶）」" caption="點了「abrió」：卡片顯示原形、詞性、難度與此句意思" />
       <h3>查字卡片上有什麼</h3>
       <ul>
         <li><strong>單字與原形</strong>：例如點到 <em>abrió</em>，會顯示「→ abrir」。</li>
@@ -118,6 +121,10 @@
         <li><strong>翻譯「…」</strong>（選更長的句子）：顯示整句自然的中文翻譯，加上最多 5 個文法重點（例如時態、慣用語）。翻過的句子會記住，再翻一次不用等。</li>
         <li><strong>劃線</strong>：把選取的文字存成書摘，在書頁上以底色標示。翻譯卡片上也有「劃線」按鈕。</li>
       </ul>
+      <div class="shots">
+        <GuideShot src="select.jpg" height={720} alt="選取 sacar dinero 後，上方出現「查詢」與「劃線」按鈕" caption="選取片語：上方出現「查詢」「劃線」" />
+        <GuideShot src="translate.jpg" height={1169} alt="選取整句後的翻譯卡片，有中文翻譯與文法重點" caption="選取整句：翻譯與文法重點" />
+      </div>
       <p class="note">劃過的句子可以在「書的頁面 → 書摘」看到、加註記或刪除。</p>
     </div>
   </details>
@@ -132,6 +139,10 @@
         <li>上方數字：收藏的字、<strong>待複習</strong>（今天該複習的）、<strong>已熟</strong>。</li>
         <li>「<strong>開始複習</strong>」：只複習到期的字；「<strong>全部未熟的字再練一次</strong>」：不管有沒有到期都練。</li>
       </ul>
+      <div class="shots">
+        <GuideShot src="vocab.jpg" height={1022} alt="單字本：語言分頁、篩選、數字統計、開始複習、匯出 Word 與單字清單" caption="單字本首頁" />
+        <GuideShot src="review.jpg" height={749} alt="複習字卡翻面後：單字、書中原句、意思，以及不記得、記得、已熟三個按鈕" caption="複習字卡（翻面後）" />
+      </div>
       <h3>篩選</h3>
       <ul>
         <li><strong>熟練度</strong>：新字、學習中、已熟。</li>
@@ -147,9 +158,10 @@
         <li>按「翻面看意思」。</li>
         <li>依自己的感覺選：<strong>不記得</strong>（10 分鐘後再出現）、<strong>記得</strong>（間隔拉長：1 天 → 3 天 → 7 天）、<strong>已熟</strong>（不再排複習，書裡也不再上色）。</li>
       </ol>
-      <p class="note">已熟的字如果又在新的句子收藏，會重新排入複習。</p>
+      <p class="note">電腦上可以用鍵盤：空白鍵或 Enter 翻面，1、2、3 分別是不記得、記得、已熟。已熟的字如果又在新的句子收藏，會重新排入複習。</p>
       <h3>單字清單</h3>
       <ul>
+        <li><strong>搜尋</strong>：可以搜尋單字、意思或例句。</li>
         <li>排序：最新收藏、字母順序、最不熟的在前。</li>
         <li>每個字可以展開看字典釋義和所有例句；例句旁的「<strong>回到書中</strong>」會打開當初遇到它的那一頁並標出來（不會改變你的閱讀進度）。</li>
         <li>「移除這句」只刪一個例句；「移除整個字」把字從單字本刪掉。</li>
@@ -182,6 +194,7 @@
         <li>可以自己取標題（不填會用第一行）、選語言。</li>
         <li>以 <code>#</code> 開頭的行會變成章節標題，出現在目錄裡。</li>
       </ul>
+      <GuideShot src="paste.jpg" height={936} alt="貼上文章的視窗：文章內容、標題、語言與開始閱讀按鈕" caption="貼上文章" />
     </div>
   </details>
 
@@ -197,6 +210,7 @@
         <li><strong>頁寬</strong>：窄、適中、寬（iPad 橫放時「寬」很好讀）。</li>
         <li><strong>紙張</strong>：跟隨系統、米白、羊皮紙、夜間。整個閱讀頁（含查字卡片）都會跟著換色。</li>
       </ul>
+      <GuideShot src="aa.jpg" height={1169} alt="閱讀設定面板：字體、字級、行距、頁寬、紙張" caption="Aa 閱讀設定" />
       <p class="note">設定會記住，所有書共用。PDF 是固定版面，只能換紙張色。新字體第一次使用時會先用系統字體顯示一下，下載好就換過去，之後不用網路也能用。</p>
       <h3>目錄與進度</h3>
       <ul>
@@ -232,6 +246,7 @@
         <li><strong>封面</strong>：EPUB 用書裡附的封面、PDF 用第一頁；沒有封面的書會依書名自動產生布面封面。</li>
         <li>點<strong>書的封面</strong>進入書的頁面。</li>
       </ul>
+      <GuideShot src="shelf.jpg" height={900} alt="書架首頁：繼續閱讀卡片、閱讀統計卡片與分類方式" caption="書架首頁：繼續閱讀、閱讀統計、分類方式" />
     </div>
   </details>
 
@@ -249,6 +264,10 @@
         <li><strong>書摘</strong>：閱讀時劃線的句子，依時間排列，顯示章節與日期。可以加一句註記（離開輸入框就會儲存）、「回到書中」或刪除。</li>
         <li><strong>資訊</strong>：可以修改這本書的語言（收藏的字會一起搬到新語言）、看加入與讀完日期、移除這本書（書摘也會一起刪除，單字本的字會保留）。</li>
       </ul>
+      <div class="shots">
+        <GuideShot src="book.jpg" height={864} alt="書的頁面：4.5 顆星評分、心得、放在哪個書架" caption="評分、心得與書架" />
+        <GuideShot src="quotes.jpg" height={533} alt="書摘：劃線的句子、註記、回到書中與刪除" caption="書摘" />
+      </div>
     </div>
   </details>
 
@@ -283,58 +302,22 @@
   <details id="guide-mobile" class="glass">
     <summary><span class="icon" aria-hidden="true">📱</span>在手機、平板上使用</summary>
     <div class="body">
-      <p class="lead">加入主畫面後，TapRead 會像一般 App 一樣有自己的圖示、全螢幕開啟，沒有網路也能打開、讀已經匯入的 EPUB、Word 與文章（PDF 與查新的字需要網路）。</p>
+      <h3>加入主畫面</h3>
+      <p>加入後就像一般 App：有自己的圖示、全螢幕開啟，資料也比較不會被清掉。選你的裝置：</p>
+      <HomeScreenGuide />
 
-      <h3>iPhone（Safari）</h3>
-      <ol class="steps">
-        <li>用 <strong>Safari</strong> 打開 TapRead 網址。</li>
-        <li>點畫面<strong>下方</strong>中間的<strong>分享按鈕</strong>（方框加向上箭頭 <span class="key">⬆︎</span>）。如果看不到工具列，往上捲一下或點一下網址列。</li>
-        <li>在分享選單往下滑，點「<strong>加入主畫面</strong>」。</li>
-        <li>名稱可以保留「TapRead」，點右上角「<strong>加入</strong>」。</li>
-        <li>回到主畫面，就會看到奶茶色的 TapRead 圖示。之後都從這個圖示打開。</li>
-      </ol>
-
-      <h3>iPad（Safari）</h3>
-      <ol class="steps">
-        <li>用 <strong>Safari</strong> 打開 TapRead 網址。</li>
-        <li>點網址列<strong>右側</strong>的<strong>分享按鈕</strong>（方框加向上箭頭 <span class="key">⬆︎</span>，在畫面右上角）。</li>
-        <li>點「<strong>加入主畫面</strong>」，再點「<strong>加入</strong>」。</li>
-      </ol>
-
-      <h3>iPhone、iPad 用 Chrome</h3>
-      <ol class="steps">
-        <li>點網址列右邊的<strong>分享按鈕</strong> <span class="key">⬆︎</span>。</li>
-        <li>點「<strong>加入主畫面</strong>」→「<strong>加入</strong>」。</li>
-      </ol>
-      <p class="note">較舊的 iOS（16.4 以前）的 Chrome 沒有這個選項，請改用 Safari。</p>
-
-      <h3>Android 手機、平板（Chrome）</h3>
-      <ol class="steps">
-        <li>用 <strong>Chrome</strong> 打開 TapRead 網址。</li>
-        <li>點右上角的<strong>選單</strong> <span class="key">⋮</span>。</li>
-        <li>點「<strong>安裝應用程式</strong>」或「<strong>加到主畫面</strong>」，再點「<strong>安裝</strong>」。</li>
-        <li>圖示會出現在主畫面和應用程式清單裡。</li>
-      </ol>
-      <p class="note">三星手機的「Samsung Internet」：點右下角選單 <span class="key">≡</span> →「新增頁面至」→「主螢幕」。</p>
-
-      <h3>電腦（Chrome、Edge）</h3>
-      <p>網址列右側會出現「<strong>安裝</strong>」圖示（螢幕加向下箭頭），點它就會變成獨立視窗的 App；Mac 的 Safari 則是選單「檔案 →加入 Dock」。</p>
-
-      <h3>注意</h3>
+      <h3>兩個提醒</h3>
       <ul>
-        <li>iPhone、iPad 上<strong>沒有加入主畫面</strong>的網站，長時間沒打開時，Safari 可能自動清除它的資料（書和單字本），所以強烈建議加入。</li>
-        <li>主畫面的 TapRead 和 Safari 裡開的 TapRead <strong>資料是分開的</strong>。加入主畫面後請都從圖示打開；之前在 Safari 裡匯入的書，用「備份與換裝置」的方法搬過來。</li>
-        <li>網址改變時（例如帳號改名），舊圖示會打不開，要刪掉舊圖示、用新網址重新加入。</li>
+        <li>iPhone、iPad 上<strong>一定要加入主畫面</strong>：沒加入的網站久沒打開，Safari 可能清掉書和單字本。</li>
+        <li>主畫面的 TapRead 和瀏覽器裡的<strong>資料是分開的</strong>，之後都從圖示打開；瀏覽器裡已有的書用「備份與換裝置」搬過來。</li>
       </ul>
 
       <h3>在手機上匯入書</h3>
       <ol class="steps">
-        <li>先把書存進「檔案」App：從 LINE、Email、網頁下載時選「儲存到檔案」（例如 iCloud Drive 或「下載項目」）。</li>
-        <li>TapRead 書架按「＋ 匯入」，會直接打開「檔案」。</li>
+        <li>先把書存進「檔案」App（從 LINE、Email 選「儲存到檔案」）。</li>
+        <li>書架按「＋ 匯入」，會直接打開「檔案」。</li>
         <li>點那本書就會匯入並打開。</li>
       </ol>
-      <h3>在手機上選取文字</h3>
-      <p>長按一個字會選取它，拖動前後的把手擴大範圍，停下來後上方就會出現「查詢／翻譯」「劃線」按鈕。</p>
     </div>
   </details>
 
@@ -453,8 +436,9 @@
   .body ul, .body ol { margin: 0 0 8px; padding-left: 1.2em; display: grid; gap: 6px; }
   .body li ul { margin-top: 6px; }
   .lead { font-weight: 600; }
+  .shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; margin: 8px 0 12px; }
+  .body > :global(figure) { margin: 8px 0 12px; }
   .note { font-size: 0.88rem; color: var(--muted); }
-  .key { display: inline-block; min-width: 1.4em; text-align: center; padding: 0 4px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-strong); font-size: 0.9em; line-height: 1.4; }
   code { font-size: 0.9em; padding: 0 4px; border-radius: 4px; background: var(--accent-soft); }
 
   .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
