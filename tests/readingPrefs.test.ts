@@ -103,7 +103,7 @@ describe('bookCss', () => {
     const css = bookCss({ ...DEFAULT_READING_PREFS, theme: 'night' }, 'en')
     expect(css).not.toContain('prefers-color-scheme')
     expect(css).toContain('color-scheme: dark')
-    expect(css).toContain('#1f1813')
+    expect(css).toContain('#2a231e')
   })
 
   it('字型宣告放在最前面', () => {

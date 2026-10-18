@@ -148,8 +148,8 @@ export default defineConfig({
         short_name: 'TapRead',
         description: '讀外文書時點詞即得上下文釋義，書檔只存在你的裝置',
         lang: 'zh-Hant-TW',
-        theme_color: '#f4eee5',
-        background_color: '#f4eee5',
+        theme_color: '#f1e9dc',
+        background_color: '#f1e9dc',
         display: 'standalone',
         start_url: './',
         icons: [

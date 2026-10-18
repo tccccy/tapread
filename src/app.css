@@ -1,35 +1,36 @@
-/* TapRead 設計基礎：米白底、咖啡色按鈕、霧面玻璃；深色模式為深咖啡玻璃（跟隨系統）
+/* TapRead 設計基礎：依色卡（參考圖片）— Warm Ivory、Soft Sand、Mushroom Taupe、Warm Walnut、Deep Mocha；
+   文字以黑白為主，霧面玻璃；深色模式為深摩卡玻璃（跟隨系統）
    設定頁可手動選淺色／深色：<html data-theme>（見 src/lib/appearance.ts）
    閱讀頁可在「Aa」指定紙張色：data-reading-theme 會覆蓋這裡的色彩（米白／羊皮紙用淺色組、夜間用深色組）
-   主色為奶茶色；--accent 用於填色（按鈕），--accent-ink 用於文字（淺色模式要深一點才讀得清楚） */
+   --accent 用於填色（按鈕，配黑字），--accent-ink 用於文字（淺色模式用 Walnut 才讀得清楚） */
 :root, [data-reading-theme='paper'], [data-reading-theme='sepia'] {
-  --bg: #f4eee5;
-  --bg-glow-1: rgba(214, 180, 140, 0.45);
-  --bg-glow-2: rgba(255, 250, 242, 0.9);
+  --bg: #f1e9dc;
+  --bg-glow-1: rgba(216, 200, 181, 0.6);
+  --bg-glow-2: rgba(250, 246, 239, 0.9);
   /* 玻璃卡片：半透明＋背景模糊 */
-  --surface: rgba(255, 252, 247, 0.62);
-  --surface-strong: rgba(255, 252, 247, 0.86);
-  --surface-solid: #fbf8f3;
-  --glass-border: rgba(255, 255, 255, 0.75);
-  --glass-shadow: 0 10px 34px rgba(92, 62, 38, 0.12), 0 1px 2px rgba(92, 62, 38, 0.06);
-  --glass-blur: blur(18px) saturate(140%);
-  --text: #3a2a20;
-  --muted: #8a7563;
-  --border: rgba(120, 88, 60, 0.18);
-  --accent: #c2a385;
-  --accent-strong: #b08f70;
-  --accent-text: #33251b;
-  --accent-ink: #876449;
-  --accent-soft: rgba(176, 143, 112, 0.16);
-  --accent-shadow: rgba(150, 118, 88, 0.28);
-  --danger: #a8432f;
-  --star: #c09a6c;
+  --surface: rgba(250, 246, 240, 0.62);
+  --surface-strong: rgba(250, 246, 240, 0.88);
+  --surface-solid: #faf6ef;
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 10px 34px rgba(64, 51, 41, 0.12), 0 1px 2px rgba(64, 51, 41, 0.06);
+  --glass-blur: blur(18px) saturate(120%);
+  --text: #1e1a16;
+  --muted: #6f655b;
+  --border: rgba(64, 51, 41, 0.16);
+  --accent: #a99a89;
+  --accent-strong: #988877;
+  --accent-text: #1e1a16;
+  --accent-ink: #725b48;
+  --accent-soft: rgba(169, 154, 137, 0.2);
+  --accent-shadow: rgba(64, 51, 41, 0.22);
+  --danger: #a24438;
+  --star: #725b48;
   /* 書架層板 */
-  --shelf-top: #e8d9c3;
-  --shelf-front: #d4bd9c;
-  --shelf-shadow: rgba(92, 62, 38, 0.22);
+  --shelf-top: #d8c8b5;
+  --shelf-front: #a99a89;
+  --shelf-shadow: rgba(64, 51, 41, 0.22);
   /* 閱讀頁紙張 */
-  --paper: #fbf7f0;
+  --paper: #f8f3ea;
   --radius: 14px;
   --radius-lg: 22px;
   /* 標題用打包的網頁字型（Literata＋思源宋體），各平台看起來一致 */
@@ -42,60 +43,60 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #19120e;
-    --bg-glow-1: rgba(150, 120, 92, 0.3);
-    --bg-glow-2: rgba(60, 40, 28, 0.6);
-    --surface: rgba(52, 38, 29, 0.58);
-    --surface-strong: rgba(58, 42, 32, 0.86);
-    --surface-solid: #2a1f18;
-    --glass-border: rgba(255, 232, 205, 0.1);
-    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
-    --text: #f1e6d8;
-    --muted: #b49c86;
-    --border: rgba(255, 228, 198, 0.13);
-    --accent: #c4a88c;
-    --accent-strong: #d3baa0;
-    --accent-text: #1c140f;
-    --accent-ink: #c4a88c;
-    --accent-soft: rgba(196, 168, 140, 0.16);
+    --bg: #2a231e;
+    --bg-glow-1: rgba(114, 91, 72, 0.28);
+    --bg-glow-2: rgba(64, 51, 41, 0.55);
+    --surface: rgba(64, 51, 41, 0.62);
+    --surface-strong: rgba(64, 51, 41, 0.9);
+    --surface-solid: #403329;
+    --glass-border: rgba(241, 233, 220, 0.1);
+    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.4);
+    --text: #f6f2ec;
+    --muted: #b8ab9c;
+    --border: rgba(241, 233, 220, 0.12);
+    --accent: #d8c8b5;
+    --accent-strong: #e6dacb;
+    --accent-text: #1e1a16;
+    --accent-ink: #d8c8b5;
+    --accent-soft: rgba(216, 200, 181, 0.14);
     --accent-shadow: rgba(0, 0, 0, 0.35);
-    --danger: #e58a7c;
-    --star: #d8b98f;
-    --shelf-top: #4a372a;
-    --shelf-front: #36281f;
-    --shelf-shadow: rgba(0, 0, 0, 0.5);
-    --paper: #1f1813;
+    --danger: #e39a8f;
+    --star: #d8c8b5;
+    --shelf-top: #725b48;
+    --shelf-front: #4f3f33;
+    --shelf-shadow: rgba(0, 0, 0, 0.45);
+    --paper: #2a231e;
     color-scheme: dark;
   }
 }
 
-[data-reading-theme='sepia'] { --paper: #f1e5cf; }
+[data-reading-theme='sepia'] { --paper: #eadfcd; }
 
 /* 手動選深色、夜間紙張：與系統深色模式同一組顏色 */
 :root[data-theme='dark'], [data-reading-theme='night'] {
-  --bg: #19120e;
-  --bg-glow-1: rgba(150, 120, 92, 0.3);
-  --bg-glow-2: rgba(60, 40, 28, 0.6);
-  --surface: rgba(52, 38, 29, 0.58);
-  --surface-strong: rgba(58, 42, 32, 0.86);
-  --surface-solid: #2a1f18;
-  --glass-border: rgba(255, 232, 205, 0.1);
-  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
-  --text: #f1e6d8;
-  --muted: #b49c86;
-  --border: rgba(255, 228, 198, 0.13);
-  --accent: #c4a88c;
-  --accent-strong: #d3baa0;
-  --accent-text: #1c140f;
-  --accent-ink: #c4a88c;
-  --accent-soft: rgba(196, 168, 140, 0.16);
+  --bg: #2a231e;
+  --bg-glow-1: rgba(114, 91, 72, 0.28);
+  --bg-glow-2: rgba(64, 51, 41, 0.55);
+  --surface: rgba(64, 51, 41, 0.62);
+  --surface-strong: rgba(64, 51, 41, 0.9);
+  --surface-solid: #403329;
+  --glass-border: rgba(241, 233, 220, 0.1);
+  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.4);
+  --text: #f6f2ec;
+  --muted: #b8ab9c;
+  --border: rgba(241, 233, 220, 0.12);
+  --accent: #d8c8b5;
+  --accent-strong: #e6dacb;
+  --accent-text: #1e1a16;
+  --accent-ink: #d8c8b5;
+  --accent-soft: rgba(216, 200, 181, 0.14);
   --accent-shadow: rgba(0, 0, 0, 0.35);
-  --danger: #e58a7c;
-  --star: #d8b98f;
-  --shelf-top: #4a372a;
-  --shelf-front: #36281f;
-  --shelf-shadow: rgba(0, 0, 0, 0.5);
-  --paper: #1f1813;
+  --danger: #e39a8f;
+  --star: #d8c8b5;
+  --shelf-top: #725b48;
+  --shelf-front: #4f3f33;
+  --shelf-shadow: rgba(0, 0, 0, 0.45);
+  --paper: #2a231e;
   color-scheme: dark;
 }
 

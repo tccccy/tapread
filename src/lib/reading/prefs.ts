@@ -71,13 +71,13 @@ export const WIDTHS: Record<WidthId, { label: string; px: number }> = {
   wide: { label: '寬', px: 960 },
 }
 
-interface Palette { background: string; text: string; link: string; scheme: 'light' | 'dark' }
+interface Palette { background: string; text: string; link: string; quote: string; scheme: 'light' | 'dark' }
 
 // 與 app.css 的 --paper 一致
 export const PALETTES: Record<Exclude<ThemeId, 'auto'>, Palette & { label: string }> = {
-  paper: { label: '米白', background: '#fbf7f0', text: '#3a2a20', link: '#876449', scheme: 'light' },
-  sepia: { label: '羊皮紙', background: '#f1e5cf', text: '#4b3621', link: '#876449', scheme: 'light' },
-  night: { label: '夜間', background: '#1f1813', text: '#eadfd1', link: '#d3baa0', scheme: 'dark' },
+  paper: { label: '米白', background: '#f8f3ea', text: '#1e1a16', link: '#725b48', quote: 'rgba(216, 200, 181, 0.75)', scheme: 'light' },
+  sepia: { label: '羊皮紙', background: '#eadfcd', text: '#2b231d', link: '#725b48', quote: 'rgba(216, 200, 181, 0.75)', scheme: 'light' },
+  night: { label: '夜間', background: '#2a231e', text: '#f2ede6', link: '#d8c8b5', quote: 'rgba(114, 91, 72, 0.85)', scheme: 'dark' },
 }
 
 export const FONT_SIZE = { min: 14, max: 28 }
@@ -146,9 +146,11 @@ export function fontStack(font: FontId, language: string): string | null {
 
 export const webFamiliesOf = (font: FontId): WebFamily[] => [...FONTS[font].web]
 
-const paletteCss = ({ background, text, link }: Palette) => `
+// 書摘標示依紙張深淺換色：淺色紙用 Sand、夜間用 Walnut，白字才看得清楚
+const paletteCss = ({ background, text, link, quote }: Palette) => `
   html, body { background: ${background} !important; color: ${text} !important; }
-  a:link, a:visited { color: ${link}; }`
+  a:link, a:visited { color: ${link}; }
+  ::highlight(pr-quote) { background-color: ${quote} !important; }`
 
 function themeCss(theme: ThemeId): string {
   if (theme !== 'auto') {

@@ -93,7 +93,7 @@
   blockquote {
     margin: 0 0 8px;
     padding-left: 12px;
-    border-left: 3px solid rgba(226, 190, 96, 0.8);
+    border-left: 3px solid var(--accent);
     font-family: var(--font-serif);
     line-height: 1.65;
     white-space: pre-line;

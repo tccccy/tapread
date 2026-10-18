@@ -5,8 +5,8 @@ import type { VocabEntry, VocabExample } from './model'
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 const FONT = '<w:rFonts w:ascii="Georgia" w:hAnsi="Georgia" w:eastAsia="Microsoft JhengHei"/>'
-const HEADER_FILL = 'EADFD1'
-const BORDER_COLOR = 'C2A385'
+const HEADER_FILL = 'D8C8B5'
+const BORDER_COLOR = 'A99A89'
 // 表格欄寬（twips，1 cm ≈ 567）；A4 直式內文寬約 9000
 const COLUMNS = [{ label: '單字', width: 1900 }, { label: '詞性', width: 900 }, { label: '意思', width: 2300 }, { label: '書中例句', width: 3900 }]
 
@@ -43,14 +43,14 @@ function sentenceRuns(example: VocabExample): string {
 
 function exampleParagraphs(example: VocabExample): string {
   const gloss = [example.contextMeaning, example.bookTitle ? `《${example.bookTitle}》` : ''].filter(Boolean).join('　')
-  return paragraph(sentenceRuns(example), 20) + paragraph(run(gloss, { color: '876449', size: 18 }), 120)
+  return paragraph(sentenceRuns(example), 20) + paragraph(run(gloss, { color: '725B48', size: 18 }), 120)
 }
 
 const cell = (width: number, content: string, fill?: string) =>
   `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : ''}</w:tcPr>${content || paragraph('')}</w:tc>`
 
 function entryRow(entry: VocabEntry): string {
-  const word = paragraph(run(entry.lemma, { bold: true, size: 24 }) + (entry.cefr ? run(`  ${entry.cefr}`, { color: '876449', size: 16 }) : ''))
+  const word = paragraph(run(entry.lemma, { bold: true, size: 24 }) + (entry.cefr ? run(`  ${entry.cefr}`, { color: '725B48', size: 16 }) : ''))
   const contents = [
     word,
     paragraph(run(entry.pos)),
@@ -74,7 +74,7 @@ function documentXml(entries: VocabEntry[], title: string, subtitle: string): st
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     + `<w:document xmlns:w="${W_NS}"><w:body>`
     + paragraph(run(title, { bold: true, size: 36 }), 80)
-    + paragraph(run(subtitle, { color: '8A7563', size: 18 }), 240)
+    + paragraph(run(subtitle, { color: '6F655B', size: 18 }), 240)
     + table
     + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>'
     + '</w:body></w:document>'

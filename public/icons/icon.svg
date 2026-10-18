@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#dfcab0"/>
-      <stop offset="1" stop-color="#c6a789"/>
+      <stop offset="0" stop-color="#e2d5c4"/>
+      <stop offset="1" stop-color="#b9aa98"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
 
   <!-- 書籤絲帶：先畫，上端被書頁蓋住，尾巴從書下方垂出 -->
-  <path d="M300 360l-2 92l20-17l19 18l2-93" fill="#b0614a" stroke="#4a3426" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M300 360l-2 92l20-17l19 18l2-93" fill="#725b48" stroke="#403329" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
 
   <!-- 手繪風翻開的書：線條略帶起伏、轉角稍微出頭，像用筆畫的 -->
-  <g stroke="#4a3426" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#403329" stroke-linecap="round" stroke-linejoin="round">
     <!-- 左頁 -->
-    <path d="M253 168c-36-27-90-39-146-27c-5 1-7 4-7 9c2 71 0 143 3 215c0 5 4 7 8 6c49-11 100-3 141 24" fill="#fbf6ee" stroke-width="11"/>
+    <path d="M253 168c-36-27-90-39-146-27c-5 1-7 4-7 9c2 71 0 143 3 215c0 5 4 7 8 6c49-11 100-3 141 24" fill="#faf6ef" stroke-width="11"/>
     <!-- 右頁 -->
-    <path d="M258 168c37-29 92-40 148-28c5 1 7 4 7 9c-3 72 0 143-4 215c0 5-4 7-8 6c-50-10-100-2-140 25" fill="#fff9f2" stroke-width="11"/>
+    <path d="M258 168c37-29 92-40 148-28c5 1 7 4 7 9c-3 72 0 143-4 215c0 5-4 7-8 6c-50-10-100-2-140 25" fill="#fdfaf5" stroke-width="11"/>
     <!-- 書背：一筆略歪的線 -->
     <path d="M256 166c-3 74 3 152-1 238" fill="none" stroke-width="10"/>
     <!-- 鉛筆描邊感：第二道細線稍微錯開 -->
@@ -23,12 +23,12 @@
     <!-- 左頁文字線（微波浪） -->
     <path d="M134 206q22-7 44-1t44 4M136 247q20-6 42-1t42 5M138 288q22-5 42 0t36 5" fill="none" stroke-width="8" opacity="0.5"/>
     <!-- 右頁文字線；第一行像被點過、塗上奶茶色 -->
-    <path d="M287 209q24-8 46-6t46-4" fill="none" stroke="#d2b597" stroke-width="22" opacity="0.85"/>
+    <path d="M287 209q24-8 46-6t46-4" fill="none" stroke="#d8c8b5" stroke-width="22" opacity="0.85"/>
     <path d="M288 211q22-8 45-6t45-5M291 252q20-7 42-5t42-4M293 293q20-6 40-4t38-4" fill="none" stroke-width="8" opacity="0.5"/>
   </g>
 
   <!-- 小星點：手繪插畫的點綴 -->
-  <g fill="none" stroke="#fbf6ee" stroke-width="7" stroke-linecap="round">
+  <g fill="none" stroke="#f1e9dc" stroke-width="7" stroke-linecap="round">
     <path d="M410 92v28M396 106h28"/>
     <path d="M96 404v18M87 413h18"/>
   </g>

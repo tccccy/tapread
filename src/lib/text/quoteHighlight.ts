@@ -1,4 +1,4 @@
-// 書摘（劃線）在書頁上的標示：淡金色底，和單字本的奶茶色、正在查的字區分
+// 書摘（劃線）在書頁上的標示：Soft Sand 底＋Walnut 底線，和單字本的 Taupe、正在查的字區分
 const NAME = 'pr-quote'
 
 type HighlightWindow = Window & {
@@ -14,4 +14,4 @@ export function setQuoteHighlights(doc: Document, ranges: Range[]) {
   else highlights.set(NAME, new win.Highlight(...ranges))
 }
 
-export const QUOTE_HIGHLIGHT_CSS = `::highlight(${NAME}) { background-color: rgba(226, 190, 96, 0.38); }`
+export const QUOTE_HIGHLIGHT_CSS = `::highlight(${NAME}) { background-color: rgba(216, 200, 181, 0.75); }`

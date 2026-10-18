@@ -6,7 +6,7 @@ export type Appearance = 'system' | 'light' | 'dark'
 const STORAGE_KEY = 'tapread.appearance'
 const VALUES: Appearance[] = ['system', 'light', 'dark']
 // 瀏覽器頂列顏色（與 app.css 的 --bg 一致）
-const BAR_COLOR = { light: '#f4eee5', dark: '#19120e' }
+const BAR_COLOR = { light: '#f1e9dc', dark: '#2a231e' }
 
 type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem'>
 
